@@ -8,6 +8,7 @@ authors = [
 ]
 requires-python = ">=3.14"
 dependencies = [
+    "ansible-core>=2.21.3",
     "faker>=40.36.0",
     "pyyaml>=6.0.3",
 ]
@@ -15,3 +16,8 @@ dependencies = [
 [tool.uv]
 # Not a Python package - gen-blueprint.py is a standalone script run by Ansible.
 package = false
+
+[dependency-groups]
+dev = [
+    "ansible-lint>=26.8.0",
+]

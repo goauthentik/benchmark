@@ -16,11 +16,13 @@ authentik, with metrics and profiles collected on a separate host.
 | `roles/runner` | k6 and the test scripts |
 | `gen-blueprint.py` | Generates the test-data blueprint and matching credentials |
 
+Lint the playbook and roles with `uv run ansible-lint site.yml roles inventory`.
+
 ## Usage
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
-uv sync install
+uv sync
 uv run ansible-galaxy collection install -r requirements.yml -p collections
 $EDITOR inventory/hosts.yml                  # point the three groups at your hosts
 uv run ansible-playbook site.yml
