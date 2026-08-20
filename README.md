@@ -11,7 +11,7 @@ authentik, with metrics and profiles collected on a separate host.
 | `group_vars/all.yml` | Cross-host settings: addresses, published ports, fixture size |
 | `site.yml` | Generates fixtures, provisions all hosts, deploys each stack |
 | `roles/common` | Docker, htop and nano on every host |
-| `roles/node_exporter` | Host CPU, memory, disk and network metrics on every host |
+| `roles/host_metrics` | node-exporter and cAdvisor on every host |
 | `roles/metrics` | Prometheus, Loki, Pyroscope and Grafana |
 | `roles/authentik` | authentik server, worker, PostgreSQL and its Prometheus exporter |
 | `roles/runner` | k6 and the test scripts |
@@ -103,7 +103,13 @@ which would otherwise grow without bound. Follow it with
   on `authentik_port_metrics` and `postgres` on `authentik_port_pg_exporter` off the
   authentik host; and `node` on `node_exporter_port` off all three hosts. The
   node-exporter container uses the host network and PID namespaces so its metrics
-  describe the host, not the container.
+  describe the host, not the container. `cadvisor` on `cadvisor_port` covers the
+  same three hosts and attributes that usage to individual containers, e.g.
+  `sum by (name) (rate(container_cpu_usage_seconds_total{name!=""}[5m]))`.
+- cAdvisor polls every `host_metrics_cadvisor_housekeeping_interval` (10s, not its
+  1s default)
+  with most collectors disabled, because it is measuring hosts that are already
+  the bottleneck.
 - authentik sends profiles to Pyroscope via `AUTHENTIK_PYROSCOPE_HOST`. Its Python
   components pick this up on their own; the Go components (server, outposts) only
   profile when `AUTHENTIK_DEBUG=true` is also set, which skews benchmark results.

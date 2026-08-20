@@ -1,0 +1,5 @@
+---
+host_metrics_dir: "{{ benchmark_root }}/host-metrics"
+# cAdvisor's default is 1s, which costs real CPU on a host that is already the
+# bottleneck of the benchmark.
+host_metrics_cadvisor_housekeeping_interval: 10s

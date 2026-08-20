@@ -1,0 +1,42 @@
+---
+services:
+  node-exporter:
+    image: quay.io/prometheus/node-exporter:latest
+    restart: unless-stopped
+    command:
+      - --path.rootfs=/host
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --web.listen-address=:${NODE_EXPORTER_PORT:-9100}
+      # The container's own bind mounts are not interesting.
+      - --collector.filesystem.mount-points-exclude=^/(dev|host|proc|sys|var/lib/docker/.+)($$|/)
+      - --collector.filesystem.fs-types-exclude=^(autofs|binfmt_misc|cgroup2?|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|mqueue|overlay|proc|procfs|pstore|squashfs|sysfs|tracefs)$$
+    # Host namespaces so the process, network and disk metrics describe the host
+    # rather than the container. This also publishes its port on the host.
+    pid: host
+    network_mode: host
+    volumes:
+      - /:/host:ro,rslave
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    restart: unless-stopped
+    # cAdvisor needs the host cgroup and device trees to attribute usage.
+    privileged: true
+    devices:
+      - /dev/kmsg
+    command:
+      - --housekeeping_interval=${CADVISOR_HOUSEKEEPING_INTERVAL:-10s}
+      - --docker_only=true
+      - --store_container_labels=false
+      # Everything not needed for per-container cpu/memory/io, dropped to keep
+      # cAdvisor's own footprint small on a saturated host.
+      - --disable_metrics=advtcp,cpu_topology,cpuset,hugetlb,memory_numa,percpu,process,referenced_memory,resctrl,sched,tcp,udp
+    ports:
+      - ${CADVISOR_PORT:-8080}:8080
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro

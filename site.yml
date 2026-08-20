@@ -29,7 +29,7 @@
   become: true
   roles:
     - common
-    - node_exporter
+    - host_metrics
 
 - name: Deploy the metrics stack
   hosts: metrics

@@ -36,3 +36,9 @@ scrape_configs:
 {% for host in (groups['metrics'] + groups['authentik'] + groups['tests']) | unique %}
           - "{{ hostvars[host].ansible_host | default(host) }}:{{ node_exporter_port }}"
 {% endfor %}
+  - job_name: cadvisor
+    static_configs:
+      - targets:
+{% for host in (groups['metrics'] + groups['authentik'] + groups['tests']) | unique %}
+          - "{{ hostvars[host].ansible_host | default(host) }}:{{ cadvisor_port }}"
+{% endfor %}

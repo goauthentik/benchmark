@@ -1,0 +1,25 @@
+---
+- name: Create host-metrics directory
+  ansible.builtin.file:
+    path: "{{ host_metrics_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Copy compose file
+  ansible.builtin.copy:
+    src: compose.yml
+    dest: "{{ host_metrics_dir }}/compose.yml"
+    mode: "0644"
+
+- name: Write environment file
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ host_metrics_dir }}/.env"
+    mode: "0644"
+
+- name: Deploy node-exporter and cAdvisor
+  community.docker.docker_compose_v2:
+    project_src: "{{ host_metrics_dir }}"
+    state: present
+    pull: always
+    remove_orphans: true

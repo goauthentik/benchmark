@@ -22,6 +22,7 @@ metrics_loki_port: 3100
 # Shared by Prometheus itself and by Grafana's $__rate_interval calculation.
 metrics_scrape_interval: 15s
 node_exporter_port: 9100
+cadvisor_port: 8080
 
 # Locally generated fixtures: the blueprint goes to the authentik host, the
 # matching credentials go to the k6 host.
