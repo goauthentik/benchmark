@@ -3,6 +3,8 @@ x-k6-env: &k6-env
   K6_PROMETHEUS_RW_SERVER_URL: ${HOSTNAME_METRICS}/api/v1/write
   K6_PROMETHEUS_RW_TREND_AS_NATIVE_HISTOGRAM: true
   K6_PROMETHEUS_RW_PUSH_INTERVAL: 1s
+  K6_WEB_DASHBOARD: true
+  K6_WEB_DASHBOARD_HOST: 0.0.0.0
   BENCH_HOST: ${BENCH_HOST:?authentik host required}
   BENCH_PORT: ${BENCH_PORT:-9000}
   VUS: ${VUS:-8}
@@ -25,6 +27,8 @@ services:
     environment:
       <<: *k6-env
       PROFILE: quick
+    ports:
+      - 5665:5665
     command: >
       run
       --out experimental-prometheus-rw
@@ -40,6 +44,8 @@ services:
     environment:
       <<: *k6-env
       PROFILE: burn
+    ports:
+      - 5665:5665
     command: >
       run
       --out experimental-prometheus-rw
