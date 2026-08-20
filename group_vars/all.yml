@@ -18,6 +18,7 @@ metrics_prometheus_port: 9090
 metrics_grafana_port: 3000
 metrics_pyroscope_port: 4040
 metrics_loki_port: 3100
+node_exporter_port: 9100
 
 # Locally generated fixtures: the blueprint goes to the authentik host, the
 # matching credentials go to the k6 host.

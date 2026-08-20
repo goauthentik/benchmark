@@ -25,6 +25,7 @@
   become: true
   roles:
     - common
+    - node_exporter
 
 - name: Deploy the metrics stack
   hosts: metrics

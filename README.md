@@ -11,6 +11,7 @@ authentik, with metrics and profiles collected on a separate host.
 | `group_vars/all.yml` | Cross-host settings: addresses, published ports, fixture size |
 | `site.yml` | Generates fixtures, provisions all hosts, deploys each stack |
 | `roles/common` | Docker, htop and nano on every host |
+| `roles/node_exporter` | Host CPU, memory, disk and network metrics on every host |
 | `roles/metrics` | Prometheus, Loki, Pyroscope and Grafana |
 | `roles/authentik` | authentik server, worker, PostgreSQL and its Prometheus exporter |
 | `roles/runner` | k6 and the test scripts |
@@ -90,9 +91,11 @@ which would otherwise grow without bound. Follow it with
   Shipping is non-blocking, so a Loki outage drops log lines rather than stalling
   the containers under test, and Docker's dual-logging cache keeps
   `docker compose logs` working locally.
-- Prometheus scrapes three jobs off the authentik host: authentik itself on
-  `authentik_port_metrics`, and `postgres-exporter` on `authentik_port_pg_exporter`,
-  which runs alongside the database in the authentik stack.
+- Prometheus scrape jobs: `prometheus`, `loki` and `pyroscope` locally; `authentik`
+  on `authentik_port_metrics` and `postgres` on `authentik_port_pg_exporter` off the
+  authentik host; and `node` on `node_exporter_port` off all three hosts. The
+  node-exporter container uses the host network and PID namespaces so its metrics
+  describe the host, not the container.
 - authentik sends profiles to Pyroscope via `AUTHENTIK_PYROSCOPE_HOST`. Its Python
   components pick this up on their own; the Go components (server, outposts) only
   profile when `AUTHENTIK_DEBUG=true` is also set, which skews benchmark results.

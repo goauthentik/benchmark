@@ -2,6 +2,7 @@
 all:
   vars:
     ansible_user: root
+  # Every host also runs node-exporter, scraped by Prometheus on the metrics host.
   children:
     # Prometheus, Loki, Pyroscope and Grafana. Receives k6 remote-write and the
     # container logs of the other hosts, scrapes authentik's metrics endpoint and

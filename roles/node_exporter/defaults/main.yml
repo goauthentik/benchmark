@@ -1,0 +1,2 @@
+---
+node_exporter_dir: "{{ benchmark_root }}/node-exporter"
