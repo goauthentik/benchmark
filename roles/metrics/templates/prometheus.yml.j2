@@ -21,3 +21,9 @@ scrape_configs:
 {% for host in groups['authentik'] %}
           - "{{ hostvars[host].ansible_host | default(host) }}:{{ authentik_port_metrics }}"
 {% endfor %}
+  - job_name: postgres
+    static_configs:
+      - targets:
+{% for host in groups['authentik'] %}
+          - "{{ hostvars[host].ansible_host | default(host) }}:{{ authentik_port_pg_exporter }}"
+{% endfor %}

@@ -12,7 +12,7 @@ authentik, with metrics and profiles collected on a separate host.
 | `site.yml` | Generates fixtures, provisions all hosts, deploys each stack |
 | `roles/common` | Docker, htop and nano on every host |
 | `roles/metrics` | Prometheus, Pyroscope and Grafana |
-| `roles/authentik` | authentik server, worker and PostgreSQL |
+| `roles/authentik` | authentik server, worker, PostgreSQL and its Prometheus exporter |
 | `roles/runner` | k6 and the test scripts |
 | `gen-blueprint.py` | Generates the test-data blueprint and matching credentials |
 
@@ -83,6 +83,9 @@ which would otherwise grow without bound. Follow it with
   cached in `credentials/` on the control node so re-runs do not rotate them.
 - Prometheus, Pyroscope and Grafana bind to `0.0.0.0` because the other hosts
   connect to them. Override `metrics_bind_address` or firewall the host.
+- Prometheus scrapes three jobs off the authentik host: authentik itself on
+  `authentik_port_metrics`, and `postgres-exporter` on `authentik_port_pg_exporter`,
+  which runs alongside the database in the authentik stack.
 - authentik sends profiles to Pyroscope via `AUTHENTIK_PYROSCOPE_HOST`. Its Python
   components pick this up on their own; the Go components (server, outposts) only
   profile when `AUTHENTIK_DEBUG=true` is also set, which skews benchmark results.

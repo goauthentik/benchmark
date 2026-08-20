@@ -13,6 +13,7 @@ metrics_address: "{{ hostvars[groups['metrics'] | first].ansible_host | default(
 authentik_port_http: 9000
 authentik_port_https: 9443
 authentik_port_metrics: 9300
+authentik_port_pg_exporter: 9187
 metrics_prometheus_port: 9090
 metrics_grafana_port: 3000
 metrics_pyroscope_port: 4040

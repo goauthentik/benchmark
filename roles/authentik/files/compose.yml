@@ -20,6 +20,17 @@ services:
       timeout: 5s
     volumes:
       - database:/var/lib/postgresql/data
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:latest
+    restart: unless-stopped
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    environment:
+      DATA_SOURCE_NAME: postgresql://${PG_USER:-authentik}:${PG_PASS}@postgresql:5432/${PG_DB:-authentik}?sslmode=disable
+    ports:
+      # Scraped by Prometheus on the metrics host.
+      - ${COMPOSE_PORT_PG_EXPORTER:-9187}:9187
   server:
     command: server
     depends_on:
