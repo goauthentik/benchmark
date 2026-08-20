@@ -1,6 +1,5 @@
 ---
 runner_dir: "{{ benchmark_root }}/runner"
-runner_vus: 8
 runner_bench_host: "{{ authentik_address }}"
 runner_bench_port: "{{ authentik_port_http }}"
 # Flow slug the test drives. A flow with MFA also needs static tokens on the
@@ -16,6 +15,7 @@ runner_iterations: 1000
 # Safety net if the target cannot get through the iterations in time.
 runner_quick_duration: 150s
 runner_burn_duration: 8760h
+runner_vus: 8
 
 # The quick benchmark takes several minutes, so it only runs when asked for.
 runner_run_tests: false

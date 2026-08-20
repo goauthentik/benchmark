@@ -25,3 +25,5 @@ all:
       hosts:
         tests-1:
           ansible_host: tests.example.com
+      vars:
+        runner_vus: 8
