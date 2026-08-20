@@ -1,4 +1,9 @@
 ---
+- name: Check the requested profile
+  ansible.builtin.assert:
+    that: runner_profile in ["quick", "burn"]
+    fail_msg: "runner_profile must be quick or burn, got {{ runner_profile }}."
+
 - name: Create runner directories
   ansible.builtin.file:
     path: "{{ runner_dir }}/{{ item }}"
@@ -44,15 +49,27 @@
   community.docker.docker_compose_v2_pull:
     project_src: "{{ runner_dir }}"
 
-- name: Run the benchmark
+- name: Run the quick benchmark
   ansible.builtin.command:
     cmd: docker compose run --rm k6
     chdir: "{{ runner_dir }}"
   register: runner_k6_run
   changed_when: true
-  when: runner_run_tests | bool
+  when:
+    - runner_profile == "quick"
+    - runner_run_tests | bool
 
 - name: Show k6 summary
   ansible.builtin.debug:
     var: runner_k6_run.stdout_lines
-  when: runner_run_tests | bool
+  when:
+    - runner_profile == "quick"
+    - runner_run_tests | bool
+
+- name: Manage the burn test
+  community.docker.docker_compose_v2:
+    project_src: "{{ runner_dir }}"
+    profiles: [burn]
+    services: [k6-burn]
+    state: "{{ runner_burn_state }}"
+  when: runner_profile == "burn"

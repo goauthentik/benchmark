@@ -7,5 +7,15 @@ runner_bench_port: "{{ authentik_port_http }}"
 # stage backed by static tokens; the default flow ships with authentik.
 runner_flow_no_mfa: default-authentication-flow
 runner_flow_with_mfa: default-authentication-mfa-flow
-# The benchmark takes several minutes, so it only runs when asked for.
+
+# quick: each scenario runs for runner_quick_duration seconds, in sequence, then
+#        k6 exits. Started by runner_run_tests, and blocks until it finishes.
+# burn:  all scenarios run at once in a background container until stopped.
+runner_profile: quick
+runner_quick_duration: 150
+runner_burn_duration: 8760h
+
+# The quick benchmark takes several minutes, so it only runs when asked for.
 runner_run_tests: false
+# Set to absent to stop a running burn test.
+runner_burn_state: present
