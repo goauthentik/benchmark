@@ -1,15 +1,20 @@
 ---
 - name: Create authentik directories
   ansible.builtin.file:
-    path: "{{ authentik_dir }}/{{ item }}"
+    path: "{{ authentik_dir }}/{{ item.path }}"
     state: directory
-    mode: "0755"
+    mode: "{{ item.mode }}"
   loop:
-    - ""
-    - data
-    - certs
-    - custom-templates
-    - blueprints
+    - path: ""
+      mode: "0755"
+    - path: data
+      mode: "0775"
+    - path: certs
+      mode: "0755"
+    - path: custom-templates
+      mode: "0755"
+    - path: blueprints
+      mode: "0755"
 
 - name: Copy compose file
   ansible.builtin.copy:
