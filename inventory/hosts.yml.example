@@ -2,6 +2,8 @@
 all:
   vars:
     ansible_user: root
+    fixture_users: 250
+    fixture_seed: 1337
   # Every host also runs node-exporter, scraped by Prometheus on the metrics host.
   children:
     # Prometheus, Loki, Pyroscope and Grafana. Receives k6 remote-write and the
