@@ -36,3 +36,12 @@
     state: present
     pull: always
     remove_orphans: true
+
+- name: Wait for authentik to be ready
+  ansible.builtin.uri:
+    url: "http://localhost:{{ authentik_port_http }}/-/health/ready/"
+    status_code: 204
+  register: authentik_ready
+  until: authentik_ready is success
+  retries: 60
+  delay: 5

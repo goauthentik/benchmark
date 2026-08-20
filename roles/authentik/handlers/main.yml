@@ -1,16 +1,4 @@
 ---
-# authentik rediscovers blueprints on its own schedule, so a changed blueprint
-# is applied explicitly instead of waiting for the next discovery run.
-- name: Wait for authentik to be ready
-  ansible.builtin.uri:
-    url: "http://localhost:{{ authentik_port_http }}/-/health/ready/"
-    status_code: 204
-  register: authentik_ready
-  until: authentik_ready is success
-  retries: 60
-  delay: 5
-  listen: Apply the test-data blueprint
-
 - name: Apply the test-data blueprint
   ansible.builtin.command:
     # Paths are relative to authentik's blueprints directory, and the local
