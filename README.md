@@ -38,14 +38,14 @@ That will:
 
 ## Test profiles
 
-`runner_profile` picks how k6 runs. Both profiles drive the same scenarios, one
-per authentication flow, and tag their metrics with `profile` so the two are
-distinguishable in Grafana.
+`runner_profile` picks how k6 runs. Both profiles drive the same single `login`
+scenario and tag their metrics with `profile`, so runs are distinguishable in
+Grafana.
 
 ### quick (default)
 
-Each scenario runs for `runner_quick_duration` seconds (150 by default), one
-after the other, then k6 exits. Takes about five and a half minutes:
+The scenario runs for `runner_quick_duration` seconds (150 by default), then k6
+exits:
 
 ```bash
 uv run ansible-playbook site.yml -e runner_run_tests=true
@@ -57,8 +57,8 @@ stream to Prometheus via remote-write and are also written to
 
 ### burn
 
-All scenarios run at once in a background container, with `restart:
-unless-stopped`, until you stop it. Use it to keep authentik under continuous
+The scenario runs in a background container, with `restart: unless-stopped`,
+until you stop it. Use it to keep authentik under continuous
 load while watching Grafana or Pyroscope:
 
 ```bash
@@ -89,8 +89,9 @@ which would otherwise grow without bound. Follow it with
 - authentik sends profiles to Pyroscope via `AUTHENTIK_PYROSCOPE_HOST`. Its Python
   components pick this up on their own; the Go components (server, outposts) only
   profile when `AUTHENTIK_DEBUG=true` is also set, which skews benchmark results.
-- The `with-mfa` scenario drives the flow slug in `runner_flow_with_mfa`
-  (`default-authentication-mfa-flow` by default). That flow needs an authenticator
-  validation stage, and the generated users need static tokens matching the
-  `staticToken` code in `roles/runner/files/tests/login.js` - neither is created by
-  `gen-blueprint.py` yet.
+- The test drives `default-authentication-flow`, overridable with the `FLOW`
+  environment variable. It still answers an authenticator validation stage with the
+  static code `staticToken`, so a flow with MFA needs matching static tokens on the
+  generated users - `gen-blueprint.py` does not create those yet.
+- `roles/runner/files/tests/login.ts` is TypeScript, which k6 runs natively. Type
+  check it with `bunx tsc --noEmit`.

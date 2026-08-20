@@ -8,8 +8,7 @@ x-k6-env: &k6-env
   BENCH_HOST: ${BENCH_HOST:?authentik host required}
   BENCH_PORT: ${BENCH_PORT:-9000}
   VUS: ${VUS:-8}
-  FLOW_NO_MFA: ${FLOW_NO_MFA}
-  FLOW_WITH_MFA: ${FLOW_WITH_MFA}
+  FLOW: ${FLOW:-default-authentication-flow}
   QUICK_DURATION: ${QUICK_DURATION:-150}
   BURN_DURATION: ${BURN_DURATION:-8760h}
 
@@ -20,7 +19,7 @@ x-k6: &k6
     - ./tests:/data/tests
 
 services:
-  # Fixed-time run, one scenario after the other, exits when done.
+  # Fixed-time run, exits when the scenario is done.
   k6:
     <<: *k6
     profiles: [quick]
@@ -33,10 +32,9 @@ services:
       run
       --out experimental-prometheus-rw
       --out "json=/data/output/output.json"
-      /data/tests/login.js
+      /data/tests/login.ts
 
-  # Runs all scenarios until stopped. No JSON output, that file would grow
-  # without bound.
+  # Runs until stopped. No JSON output, that file would grow without bound.
   k6-burn:
     <<: *k6
     profiles: [burn]
@@ -49,4 +47,4 @@ services:
     command: >
       run
       --out experimental-prometheus-rw
-      /data/tests/login.js
+      /data/tests/login.ts
