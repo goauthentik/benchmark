@@ -23,5 +23,5 @@ metrics_pyroscope_port: 4040
 fixtures_dir: "{{ playbook_dir }}/build"
 blueprint_file: "{{ fixtures_dir }}/test-data.yaml"
 credentials_file: "{{ fixtures_dir }}/users.json"
-fixture_users: 25000
+fixture_users: 250
 fixture_seed: 1337

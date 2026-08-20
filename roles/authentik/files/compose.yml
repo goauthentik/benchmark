@@ -26,6 +26,20 @@ services:
     depends_on:
       postgresql:
         condition: service_healthy
+    # Collectors that are off by default but carry the table, vacuum and
+    # transaction detail the PostgreSQL dashboard asks for.
+    command:
+      - --collector.long_running_transactions
+      - --collector.postmaster
+      - --collector.process_idle
+      - --collector.stat_activity
+      - --collector.stat_activity_autovacuum
+      - --collector.stat_checkpointer
+      - --collector.stat_progress_vacuum
+      - --collector.stat_user_tables
+      - --collector.stat_wal_receiver
+      - --collector.statio_user_indexes
+      - --collector.statio_user_tables
     environment:
       DATA_SOURCE_NAME: postgresql://${PG_USER:-authentik}:${PG_PASS}@postgresql:5432/${PG_DB:-authentik}?sslmode=disable
     ports:
