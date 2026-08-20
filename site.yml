@@ -5,6 +5,10 @@
   gather_facts: false
   tags: [fixtures]
   tasks:
+    - name: Record when this run started
+      ansible.builtin.set_fact:
+        benchmark_run_started_ms: "{{ (now(utc=true).timestamp() * 1000) | int }}"
+
     - name: Create fixtures directory
       ansible.builtin.file:
         path: "{{ fixtures_dir }}"
@@ -44,3 +48,31 @@
   become: true
   roles:
     - runner
+
+# A region annotation covering the run, so dashboards show when the deployment
+# touched the stacks and results either side may not be comparable.
+- name: Annotate the run in Grafana
+  hosts: metrics
+  gather_facts: false
+  vars:
+    annotation_start: "{{ hostvars['localhost']['benchmark_run_started_ms'] | default((now(utc=true).timestamp() * 1000) | int) }}"
+    annotation_revision: "{{ lookup('pipe', 'git -C ' ~ playbook_dir ~ ' describe --always --dirty 2>/dev/null || echo unknown') }}"
+    annotation_body:
+      time: "{{ annotation_start | int }}"
+      timeEnd: "{{ (now(utc=true).timestamp() * 1000) | int }}"
+      tags: [ansible, deploy]
+      text: "Ansible run on {{ ansible_play_hosts_all | join(', ') }} at {{ annotation_revision }}"
+  tasks:
+    - name: Create the deploy annotation
+      ansible.builtin.uri:
+        url: "http://localhost:{{ metrics_grafana_port }}/api/annotations"
+        method: POST
+        body_format: json
+        # Serialised here so the timestamps stay JSON numbers rather than strings.
+        body: "{{ annotation_body | combine({'time': annotation_body.time | int, 'timeEnd': annotation_body.timeEnd | int}) | to_json }}"
+        status_code: 200
+      register: annotation
+      # Grafana may still be restarting from the provisioning handler.
+      until: annotation is success
+      retries: 10
+      delay: 3

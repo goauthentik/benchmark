@@ -51,6 +51,24 @@
         "iconColor": "rgba(0, 211, 255, 1)",
         "name": "Annotations & Alerts",
         "type": "dashboard"
+      },
+      {
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "purple",
+        "name": "Ansible runs",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": [
+            "ansible"
+          ],
+          "type": "tags"
+        }
       }
     ]
   },

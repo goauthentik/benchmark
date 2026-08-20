@@ -80,6 +80,12 @@ which would otherwise grow without bound. Follow it with
 
 ## Notes
 
+- Every playbook run posts a region annotation to Grafana tagged `ansible`,
+  covering the run from start to finish. The provisioned dashboards show it as a
+  purple band, so a change in the numbers can be lined up against a deploy. It
+  goes through Grafana's API as the anonymous admin user the stack already
+  enables; the run fails loudly if that is ever locked down.
+
 - Fixtures are only generated once. Delete `build/` to regenerate them, e.g. after
   changing `fixture_users`.
 - The authentik database password and secret key are generated on first run and

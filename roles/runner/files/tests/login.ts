@@ -16,8 +16,7 @@ const usersFile = __ENV.USERS_FILE || "./users.json";
 const flow = __ENV.FLOW || "default-authentication-flow";
 
 const profile = __ENV.PROFILE || "quick";
-// Logins each VU performs, so a run is a fixed amount of work rather than a
-// fixed amount of time.
+// Fixed work per VU rather than a fixed run length, so runs stay comparable.
 const iterations = Number(__ENV.ITERATIONS || 1000);
 const quickDuration = __ENV.QUICK_DURATION || "150s";
 const burnDuration = __ENV.BURN_DURATION || "8760h";
@@ -26,8 +25,7 @@ const burnDuration = __ENV.BURN_DURATION || "8760h";
 const burnIterations = 1000000000;
 
 const profiles: Record<string, PerVUIterationsScenario> = {
-    // Every VU runs the same number of logins, then k6 exits. maxDuration is the
-    // fallback if the target is too slow to get through them.
+    // maxDuration only bites when the target is too slow to finish the iterations.
     quick: {
         executor: "per-vu-iterations",
         vus: vus,
