@@ -1,8 +1,8 @@
 ---
 # Managed by Ansible - do not edit.
 global:
-  scrape_interval: 15s
-  evaluation_interval: 15s
+  scrape_interval: {{ metrics_scrape_interval }}
+  evaluation_interval: {{ metrics_scrape_interval }}
   external_labels:
     cluster: benchmarks
     prometheus: benchmarks

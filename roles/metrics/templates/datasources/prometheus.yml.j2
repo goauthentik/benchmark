@@ -1,0 +1,15 @@
+---
+# Managed by Ansible - do not edit.
+apiVersion: 1
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    orgId: 1
+    uid: prometheus
+    url: http://prometheus:9090
+    jsonData:
+      # Grafana derives $__rate_interval from this, so it has to match
+      # Prometheus' real scrape interval or rate() queries come back empty on
+      # short time ranges.
+      timeInterval: {{ metrics_scrape_interval }}

@@ -31,6 +31,13 @@
     mode: "0644"
   notify: Reload Grafana
 
+- name: Write the Prometheus datasource
+  ansible.builtin.template:
+    src: datasources/prometheus.yml.j2
+    dest: "{{ metrics_dir }}/grafana/provisioning/datasources/prometheus.yml"
+    mode: "0644"
+  notify: Reload Grafana
+
 - name: Copy Grafana dashboard provider
   ansible.builtin.copy:
     src: grafana/providers/dashboards.yml

@@ -7,5 +7,3 @@ datasources:
     orgId: 1
     uid: pyroscope
     url: http://pyroscope:4040
-    jsonData:
-      timeInterval: 1s
