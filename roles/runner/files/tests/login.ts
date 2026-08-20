@@ -1,7 +1,7 @@
 import http from "k6/http";
 import { check, fail } from "k6";
 import { SharedArray } from "k6/data";
-import type { ConstantVUsScenario, Options } from "k6/options";
+import type { Options, PerVUIterationsScenario } from "k6/options";
 
 interface User {
     username: string;
@@ -16,23 +16,30 @@ const usersFile = __ENV.USERS_FILE || "./users.json";
 const flow = __ENV.FLOW || "default-authentication-flow";
 
 const profile = __ENV.PROFILE || "quick";
-const quickDuration = Number(__ENV.QUICK_DURATION || 150);
-// k6 has no infinite duration, so the burn profile runs for a year and is
-// expected to be stopped by stopping its container.
+// Logins each VU performs, so a run is a fixed amount of work rather than a
+// fixed amount of time.
+const iterations = Number(__ENV.ITERATIONS || 1000);
+const quickDuration = __ENV.QUICK_DURATION || "150s";
 const burnDuration = __ENV.BURN_DURATION || "8760h";
+// per-vu-iterations needs a finite count, and the burn profile is stopped by
+// stopping its container, so it gets a number no run will reach.
+const burnIterations = 1000000000;
 
-const profiles: Record<string, ConstantVUsScenario> = {
-    // Runs for a fixed window, then k6 exits.
+const profiles: Record<string, PerVUIterationsScenario> = {
+    // Every VU runs the same number of logins, then k6 exits. maxDuration is the
+    // fallback if the target is too slow to get through them.
     quick: {
-        executor: "constant-vus",
+        executor: "per-vu-iterations",
         vus: vus,
-        duration: `${quickDuration}s`,
+        iterations: iterations,
+        maxDuration: quickDuration,
     },
-    // Runs for as long as the container is up.
+    // Keeps looping for as long as the container is up.
     burn: {
-        executor: "constant-vus",
+        executor: "per-vu-iterations",
         vus: vus,
-        duration: burnDuration,
+        iterations: burnIterations,
+        maxDuration: burnDuration,
     },
 };
 

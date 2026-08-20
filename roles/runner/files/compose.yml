@@ -19,8 +19,9 @@ x-k6-env: &k6-env
   BENCH_HOST: ${BENCH_HOST:?authentik host required}
   BENCH_PORT: ${BENCH_PORT:-9000}
   VUS: ${VUS:-8}
+  ITERATIONS: ${ITERATIONS:-1000}
   FLOW: ${FLOW:-default-authentication-flow}
-  QUICK_DURATION: ${QUICK_DURATION:-150}
+  QUICK_DURATION: ${QUICK_DURATION:-150s}
   BURN_DURATION: ${BURN_DURATION:-8760h}
 
 x-k6: &k6

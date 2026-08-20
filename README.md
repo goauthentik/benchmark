@@ -40,13 +40,14 @@ That will:
 ## Test profiles
 
 `runner_profile` picks how k6 runs. Both profiles drive the same single `login`
-scenario and tag their metrics with `profile`, so runs are distinguishable in
-Grafana.
+scenario with the `per-vu-iterations` executor and tag their metrics with
+`profile`, so runs are distinguishable in Grafana.
 
 ### quick (default)
 
-The scenario runs for `runner_quick_duration` seconds (150 by default), then k6
-exits:
+Every VU runs `runner_iterations` logins (1000 by default), so a run is
+`runner_vus * runner_iterations` logins of fixed work and ends when they are done.
+`runner_quick_duration` (150s) is only a cap for a target that cannot keep up:
 
 ```bash
 uv run ansible-playbook site.yml -e runner_run_tests=true
@@ -58,8 +59,9 @@ stream to Prometheus via remote-write and are also written to
 
 ### burn
 
-The scenario runs in a background container, with `restart: unless-stopped`,
-until you stop it. Use it to keep authentik under continuous
+The scenario runs in a background container, with `restart: unless-stopped`, and
+its iteration count is high enough that the container's lifetime is the only
+limit. Use it to keep authentik under continuous
 load while watching Grafana or Pyroscope:
 
 ```bash

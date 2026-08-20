@@ -7,11 +7,14 @@ runner_bench_port: "{{ authentik_port_http }}"
 # generated users to match the code in login.ts.
 runner_flow: default-authentication-flow
 
-# quick: the scenario runs for runner_quick_duration seconds, then k6 exits.
-#        Started by runner_run_tests, and blocks until it finishes.
-# burn:  the scenario runs in a background container until stopped.
+# quick: every VU runs runner_iterations logins, then k6 exits. Started by
+#        runner_run_tests, and blocks until it finishes.
+# burn:  the scenario keeps looping in a background container until stopped.
 runner_profile: quick
-runner_quick_duration: 150
+# Logins per VU, so a quick run does runner_vus * runner_iterations logins.
+runner_iterations: 1000
+# Safety net if the target cannot get through the iterations in time.
+runner_quick_duration: 150s
 runner_burn_duration: 8760h
 
 # The quick benchmark takes several minutes, so it only runs when asked for.
