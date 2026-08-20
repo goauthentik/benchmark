@@ -9,6 +9,7 @@
     - prometheus
     - grafana/provisioning
     - grafana/provisioning/datasources
+    - grafana/provisioning/dashboards
     - grafana/dashboards
 
 - name: Copy compose file
@@ -27,6 +28,20 @@
   ansible.builtin.copy:
     src: grafana/datasources/
     dest: "{{ metrics_dir }}/grafana/provisioning/datasources/"
+    mode: "0644"
+  notify: Reload Grafana
+
+- name: Copy Grafana dashboard provider
+  ansible.builtin.copy:
+    src: grafana/providers/dashboards.yml
+    dest: "{{ metrics_dir }}/grafana/provisioning/dashboards/dashboards.yml"
+    mode: "0644"
+  notify: Reload Grafana
+
+- name: Copy Grafana dashboards
+  ansible.builtin.copy:
+    src: grafana/dashboards/
+    dest: "{{ metrics_dir }}/grafana/dashboards/"
     mode: "0644"
   notify: Reload Grafana
 
