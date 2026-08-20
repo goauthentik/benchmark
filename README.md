@@ -19,10 +19,11 @@ authentik, with metrics and profiles collected on a separate host.
 ## Usage
 
 ```bash
-pip install ansible-core                     # or: uv tool install ansible-core
-ansible-galaxy collection install -r requirements.yml -p collections
+curl -LsSf https://astral.sh/uv/install.sh | sh
+uv sync install
+uv run ansible-galaxy collection install -r requirements.yml -p collections
 $EDITOR inventory/hosts.yml                  # point the three groups at your hosts
-ansible-playbook site.yml
+uv run ansible-playbook site.yml
 ```
 
 That will:
@@ -36,7 +37,7 @@ That will:
 Run the benchmark itself, which takes about five and a half minutes:
 
 ```bash
-ansible-playbook site.yml -e runner_run_tests=true
+uv run ansible-playbook site.yml -e runner_run_tests=true
 ```
 
 Results stream to Prometheus via remote-write and are also written to
