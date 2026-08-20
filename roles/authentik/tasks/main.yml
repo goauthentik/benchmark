@@ -28,6 +28,7 @@
     src: "{{ blueprint_file }}"
     dest: "{{ authentik_dir }}/blueprints/test-data.yaml"
     mode: "0644"
+  register: authentik_blueprint
 
 - name: Deploy authentik stack
   community.docker.docker_compose_v2:
@@ -35,3 +36,24 @@
     state: present
     pull: always
     remove_orphans: true
+
+# authentik rediscovers blueprints on its own schedule, so a changed file is
+# applied explicitly instead of waiting for the next discovery run.
+- name: Wait for authentik to be ready
+  ansible.builtin.uri:
+    url: "http://localhost:{{ authentik_port_http }}/-/health/ready/"
+    status_code: 204
+  register: authentik_ready
+  until: authentik_ready is success
+  retries: 60
+  delay: 5
+  when: authentik_blueprint is changed
+
+- name: Apply the test-data blueprint
+  ansible.builtin.command:
+    # Paths are relative to authentik's blueprints directory, and the local
+    # blueprints are mounted at /blueprints/local.
+    cmd: docker compose exec -T worker ak apply_blueprint local/test-data.yaml
+    chdir: "{{ authentik_dir }}"
+  changed_when: true
+  when: authentik_blueprint is changed
