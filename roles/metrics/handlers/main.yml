@@ -5,3 +5,11 @@
     state: restarted
     services:
       - prometheus
+
+# Grafana only reads provisioning files at startup.
+- name: Reload Grafana
+  community.docker.docker_compose_v2:
+    project_src: "{{ metrics_dir }}"
+    state: restarted
+    services:
+      - grafana
