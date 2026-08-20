@@ -1,9 +1,0 @@
-services:
-  postgresql:
-    command: "-c max_connections=500"
-  worker:
-    volumes:
-    - ./blueprints:/blueprints/local
-  server:
-    ports:
-      - 9300:9300

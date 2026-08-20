@@ -1,7 +1,11 @@
+---
 services:
   postgresql:
+    image: docker.io/library/postgres:16-alpine
+    restart: unless-stopped
+    command: "-c max_connections=500"
     env_file:
-    - .env
+      - .env
     environment:
       POSTGRES_DB: ${PG_DB:-authentik}
       POSTGRES_PASSWORD: ${PG_PASS:?database password required}
@@ -11,21 +15,18 @@ services:
       retries: 5
       start_period: 20s
       test:
-      - CMD-SHELL
-      - pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}
+        - CMD-SHELL
+        - pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}
       timeout: 5s
-    image: docker.io/library/postgres:16-alpine
-    restart: unless-stopped
-    command: "-c max_connections=500"
     volumes:
-    - database:/var/lib/postgresql/data
+      - database:/var/lib/postgresql/data
   server:
     command: server
     depends_on:
       postgresql:
         condition: service_healthy
     env_file:
-    - .env
+      - .env
     environment:
       AUTHENTIK_POSTGRESQL__HOST: postgresql
       AUTHENTIK_POSTGRESQL__NAME: ${PG_DB:-authentik}
@@ -34,20 +35,22 @@ services:
       AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:?secret key required}
     image: ${AUTHENTIK_IMAGE:-ghcr.io/goauthentik/server}:${AUTHENTIK_TAG:-2026.8.0}
     ports:
-    - ${COMPOSE_PORT_HTTP:-9000}:9000
-    - ${COMPOSE_PORT_HTTPS:-9443}:9443
+      - ${COMPOSE_PORT_HTTP:-9000}:9000
+      - ${COMPOSE_PORT_HTTPS:-9443}:9443
+    # Scraped by Prometheus on the metrics host.
+      - ${COMPOSE_PORT_METRICS:-9300}:9300
     restart: unless-stopped
     shm_size: 512mb
     volumes:
-    - ./data:/data
-    - ./custom-templates:/templates
+      - ./data:/data
+      - ./custom-templates:/templates
   worker:
     command: worker
     depends_on:
       postgresql:
         condition: service_healthy
     env_file:
-    - .env
+      - .env
     environment:
       AUTHENTIK_POSTGRESQL__HOST: postgresql
       AUTHENTIK_POSTGRESQL__NAME: ${PG_DB:-authentik}
@@ -59,10 +62,11 @@ services:
     shm_size: 512mb
     user: root
     volumes:
-    - /var/run/docker.sock:/var/run/docker.sock
-    - ./data:/data
-    - ./certs:/certs
-    - ./custom-templates:/templates
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./data:/data
+      - ./certs:/certs
+      - ./custom-templates:/templates
+      - ./blueprints:/blueprints/local
 volumes:
   database:
     driver: local

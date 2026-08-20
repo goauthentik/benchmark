@@ -1,0 +1,37 @@
+---
+- name: Create metrics directories
+  ansible.builtin.file:
+    path: "{{ metrics_dir }}/{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - ""
+    - prometheus
+    - grafana/provisioning
+    - grafana/dashboards
+
+- name: Copy compose file
+  ansible.builtin.copy:
+    src: compose.yml
+    dest: "{{ metrics_dir }}/compose.yml"
+    mode: "0644"
+
+- name: Write environment file
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ metrics_dir }}/.env"
+    mode: "0644"
+
+- name: Write Prometheus configuration
+  ansible.builtin.template:
+    src: prometheus.yml.j2
+    dest: "{{ metrics_dir }}/prometheus.yml"
+    mode: "0644"
+  notify: Reload Prometheus
+
+- name: Deploy metrics stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ metrics_dir }}"
+    state: present
+    pull: always
+    remove_orphans: true

@@ -1,0 +1,11 @@
+---
+runner_dir: "{{ benchmark_root }}/runner"
+runner_vus: 8
+runner_bench_host: "{{ authentik_address }}"
+runner_bench_port: "{{ authentik_port_http }}"
+# Flow slugs the scenarios drive. The MFA flow needs an authenticator validation
+# stage backed by static tokens; the default flow ships with authentik.
+runner_flow_no_mfa: default-authentication-flow
+runner_flow_with_mfa: default-authentication-mfa-flow
+# The benchmark takes several minutes, so it only runs when asked for.
+runner_run_tests: false

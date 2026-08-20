@@ -1,0 +1,45 @@
+---
+- name: Generate benchmark fixtures
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tags: [fixtures]
+  tasks:
+    - name: Create fixtures directory
+      ansible.builtin.file:
+        path: "{{ fixtures_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Generate the test-data blueprint and matching k6 credentials
+      ansible.builtin.command:
+        cmd: >-
+          uv run python gen-blueprint.py
+          --users {{ fixture_users }} --seed {{ fixture_seed }}
+          --output {{ blueprint_file }} --credentials {{ credentials_file }}
+        chdir: "{{ playbook_dir }}"
+        creates: "{{ credentials_file }}"
+
+- name: Provision all benchmark hosts
+  hosts: metrics:authentik:tests
+  become: true
+  roles:
+    - common
+
+- name: Deploy the metrics stack
+  hosts: metrics
+  become: true
+  roles:
+    - metrics
+
+- name: Deploy authentik
+  hosts: authentik
+  become: true
+  roles:
+    - authentik
+
+- name: Deploy the k6 test runner
+  hosts: tests
+  become: true
+  roles:
+    - runner

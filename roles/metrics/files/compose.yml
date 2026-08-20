@@ -11,11 +11,24 @@ services:
       - --web.console.libraries=/usr/share/prometheus/console_libraries
       - --web.console.templates=/usr/share/prometheus/consoles
     ports:
-      - 127.0.0.1:9090:9090
+      # Reachable from the k6 host, which remote-writes its results here.
+      - ${METRICS_BIND_ADDRESS:-0.0.0.0}:${PROMETHEUS_PORT:-9090}:9090
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./prometheus:/prometheus
     user: root
+
+  pyroscope:
+    image: grafana/pyroscope:latest
+    restart: unless-stopped
+    ports:
+      # authentik sends its profiles here via AUTHENTIK_PYROSCOPE_HOST.
+      - ${METRICS_BIND_ADDRESS:-0.0.0.0}:${PYROSCOPE_PORT:-4040}:4040
+    volumes:
+      # Named volumes because the image runs as an unprivileged user.
+      - pyroscope-data:/data
+      - pyroscope-compactor:/data-compactor
+      - pyroscope-metastore:/data-metastore
 
   grafana:
     image: grafana/grafana:latest
@@ -24,7 +37,15 @@ services:
       GF_AUTH_ANONYMOUS_ENABLED: "true"
       GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
     ports:
-      - 127.0.0.1:3000:3000
+      - ${METRICS_BIND_ADDRESS:-0.0.0.0}:${GRAFANA_PORT:-3000}:3000
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+
+volumes:
+  pyroscope-data:
+    driver: local
+  pyroscope-compactor:
+    driver: local
+  pyroscope-metastore:
+    driver: local

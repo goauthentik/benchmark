@@ -1,0 +1,6 @@
+---
+metrics_dir: "{{ benchmark_root }}/metrics"
+# Prometheus must be reachable from the k6 host for remote-write and Pyroscope
+# from the authentik host, so this binds publicly by default - restrict it with a
+# firewall or set a specific address.
+metrics_bind_address: 0.0.0.0

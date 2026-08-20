@@ -1,0 +1,5 @@
+---
+# Generated on first run and cached under credentials/ on the control node, so
+# re-running the playbook does not rotate the database password or secret key.
+authentik_pg_password: "{{ lookup('password', playbook_dir + '/credentials/pg_pass chars=ascii_letters,digits length=36') }}"
+authentik_secret_key: "{{ lookup('password', playbook_dir + '/credentials/secret_key chars=ascii_letters,digits length=60') }}"

@@ -1,0 +1,58 @@
+---
+- name: Create runner directories
+  ansible.builtin.file:
+    path: "{{ runner_dir }}/{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - ""
+    - tests
+
+- name: Create output directory
+  ansible.builtin.file:
+    path: "{{ runner_dir }}/outputs"
+    state: directory
+    # The k6 image runs as an unprivileged user and writes its JSON output here.
+    mode: "0777"
+
+- name: Copy compose file
+  ansible.builtin.copy:
+    src: compose.yml
+    dest: "{{ runner_dir }}/compose.yml"
+    mode: "0644"
+
+- name: Copy k6 tests
+  ansible.builtin.copy:
+    src: tests/
+    dest: "{{ runner_dir }}/tests/"
+    mode: "0644"
+
+- name: Upload generated credentials
+  ansible.builtin.copy:
+    src: "{{ credentials_file }}"
+    dest: "{{ runner_dir }}/tests/users.json"
+    # World readable because k6 runs as an unprivileged user inside the container.
+    mode: "0644"
+
+- name: Write environment file
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ runner_dir }}/.env"
+    mode: "0644"
+
+- name: Pull k6 image
+  community.docker.docker_compose_v2_pull:
+    project_src: "{{ runner_dir }}"
+
+- name: Run the benchmark
+  ansible.builtin.command:
+    cmd: docker compose run --rm k6
+    chdir: "{{ runner_dir }}"
+  register: runner_k6_run
+  changed_when: true
+  when: runner_run_tests | bool
+
+- name: Show k6 summary
+  ansible.builtin.debug:
+    var: runner_k6_run.stdout_lines
+  when: runner_run_tests | bool

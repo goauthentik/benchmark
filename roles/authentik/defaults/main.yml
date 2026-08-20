@@ -1,0 +1,7 @@
+---
+authentik_dir: "{{ benchmark_root }}/authentik"
+authentik_image: ghcr.io/goauthentik/server
+authentik_tag: 2026.8.0
+authentik_error_reporting: true
+# Profiles are sent to the Pyroscope instance in the metrics stack.
+authentik_pyroscope_host: "http://{{ metrics_address }}:{{ metrics_pyroscope_port }}"

@@ -1,7 +1,7 @@
 [project]
 name = "benchmarks"
 version = "0.1.0"
-description = "Add your description here"
+description = "authentik benchmark harness"
 readme = "README.md"
 authors = [
     { name = "Jens Langhammer", email = "jens.langhammer@beryju.org" }
@@ -12,9 +12,6 @@ dependencies = [
     "pyyaml>=6.0.3",
 ]
 
-[project.scripts]
-benchmarks = "benchmarks:main"
-
-[build-system]
-requires = ["uv_build>=0.12.5,<0.13.0"]
-build-backend = "uv_build"
+[tool.uv]
+# Not a Python package - gen-blueprint.py is a standalone script run by Ansible.
+package = false
