@@ -3,3 +3,5 @@
 # re-running the playbook does not rotate the database password or secret key.
 authentik_pg_password: "{{ lookup('password', playbook_dir + '/credentials/pg_pass chars=ascii_letters,digits length=36') }}"
 authentik_secret_key: "{{ lookup('password', playbook_dir + '/credentials/secret_key chars=ascii_letters,digits length=60') }}"
+authentik_admin_token: "{{ lookup('password', playbook_dir + '/credentials/admin_token chars=ascii_letters,digits length=60') }}"
+authentik_admin_password: "{{ lookup('password', playbook_dir + '/credentials/admin_password chars=ascii_letters,digits length=60') }}"
