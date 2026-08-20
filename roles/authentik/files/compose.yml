@@ -42,6 +42,7 @@ services:
     # Collectors that are off by default but carry the table, vacuum and
     # transaction detail the PostgreSQL dashboard asks for.
     command:
+      - --collector.statement
       - --collector.long_running_transactions
       - --collector.postmaster
       - --collector.process_idle
