@@ -11,7 +11,7 @@ authentik, with metrics and profiles collected on a separate host.
 | `group_vars/all.yml` | Cross-host settings: addresses, published ports, fixture size |
 | `site.yml` | Generates fixtures, provisions all hosts, deploys each stack |
 | `roles/common` | Docker, htop and nano on every host |
-| `roles/metrics` | Prometheus, Pyroscope and Grafana |
+| `roles/metrics` | Prometheus, Loki, Pyroscope and Grafana |
 | `roles/authentik` | authentik server, worker, PostgreSQL and its Prometheus exporter |
 | `roles/runner` | k6 and the test scripts |
 | `gen-blueprint.py` | Generates the test-data blueprint and matching credentials |
@@ -81,8 +81,15 @@ which would otherwise grow without bound. Follow it with
   changing `fixture_users`.
 - The authentik database password and secret key are generated on first run and
   cached in `credentials/` on the control node so re-runs do not rotate them.
-- Prometheus, Pyroscope and Grafana bind to `0.0.0.0` because the other hosts
-  connect to them. Override `metrics_bind_address` or firewall the host.
+- Prometheus, Loki, Pyroscope and Grafana bind to `0.0.0.0` because the other
+  hosts connect to them. Override `metrics_bind_address` or firewall the host.
+- Container logs from the authentik and k6 hosts go to Loki through Docker's
+  `loki` logging plugin, which `roles/loki_driver` installs on those hosts. Logs
+  carry `stack`, `container` and `host` labels, so a run is queryable as
+  `{stack="runner"}` or `{stack="authentik", container="/authentik-worker-1"}`.
+  Shipping is non-blocking, so a Loki outage drops log lines rather than stalling
+  the containers under test, and Docker's dual-logging cache keeps
+  `docker compose logs` working locally.
 - Prometheus scrapes three jobs off the authentik host: authentik itself on
   `authentik_port_metrics`, and `postgres-exporter` on `authentik_port_pg_exporter`,
   which runs alongside the database in the authentik stack.

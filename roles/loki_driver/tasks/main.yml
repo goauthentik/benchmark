@@ -1,0 +1,17 @@
+---
+# Containers on this host log straight to Loki through Docker's logging plugin,
+# which avoids running a log shipper next to every stack.
+- name: Check whether the Loki Docker logging plugin is installed
+  ansible.builtin.command:
+    cmd: docker plugin inspect loki:latest
+  register: loki_driver_inspect
+  changed_when: false
+  failed_when: false
+
+- name: Install the Loki Docker logging plugin
+  ansible.builtin.command:
+    cmd: >-
+      docker plugin install grafana/loki-docker-driver:latest
+      --alias loki --grant-all-permissions
+  when: loki_driver_inspect.rc != 0
+  changed_when: true

@@ -1,6 +1,18 @@
 ---
+x-logging: &logging
+  # Sent to Loki on the metrics host. Non-blocking so a Loki outage cannot stall
+  # the containers being benchmarked; Docker keeps a local copy for docker logs.
+  driver: loki
+  options:
+    loki-url: "${LOKI_URL:?loki url required}/loki/api/v1/push"
+    loki-external-labels: "stack=authentik,container={{.Name}},host=${LOKI_HOST:-unknown}"
+    loki-retries: "2"
+    mode: non-blocking
+    max-buffer-size: 4m
+
 services:
   postgresql:
+    logging: *logging
     image: docker.io/library/postgres:16-alpine
     restart: unless-stopped
     command: "-c max_connections=500"
@@ -21,6 +33,7 @@ services:
     volumes:
       - database:/var/lib/postgresql/data
   postgres-exporter:
+    logging: *logging
     image: quay.io/prometheuscommunity/postgres-exporter:latest
     restart: unless-stopped
     depends_on:
@@ -46,6 +59,7 @@ services:
       # Scraped by Prometheus on the metrics host.
       - ${COMPOSE_PORT_PG_EXPORTER:-9187}:9187
   server:
+    logging: *logging
     command: server
     depends_on:
       postgresql:
@@ -70,6 +84,7 @@ services:
       - ./data:/data
       - ./custom-templates:/templates
   worker:
+    logging: *logging
     command: worker
     depends_on:
       postgresql:

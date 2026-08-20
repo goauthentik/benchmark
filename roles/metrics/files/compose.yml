@@ -18,6 +18,17 @@ services:
       - ./prometheus:/prometheus
     user: root
 
+  loki:
+    image: grafana/loki:latest
+    restart: unless-stopped
+    command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      # The authentik and k6 hosts push their container logs here.
+      - ${METRICS_BIND_ADDRESS:-0.0.0.0}:${LOKI_PORT:-3100}:3100
+    volumes:
+      # Named volume because the image runs as an unprivileged user.
+      - loki-data:/loki
+
   pyroscope:
     image: grafana/pyroscope:latest
     restart: unless-stopped
@@ -43,6 +54,8 @@ services:
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
 
 volumes:
+  loki-data:
+    driver: local
   pyroscope-data:
     driver: local
   pyroscope-compactor:

@@ -1,4 +1,15 @@
 ---
+x-logging: &logging
+  # Sent to Loki on the metrics host. Non-blocking so a Loki outage cannot stall
+  # the containers being benchmarked; Docker keeps a local copy for docker logs.
+  driver: loki
+  options:
+    loki-url: "${LOKI_URL:?loki url required}/loki/api/v1/push"
+    loki-external-labels: "stack=runner,container={{.Name}},host=${LOKI_HOST:-unknown}"
+    loki-retries: "2"
+    mode: non-blocking
+    max-buffer-size: 4m
+
 x-k6-env: &k6-env
   K6_PROMETHEUS_RW_SERVER_URL: ${HOSTNAME_METRICS}/api/v1/write
   K6_PROMETHEUS_RW_TREND_AS_NATIVE_HISTOGRAM: true
@@ -14,6 +25,7 @@ x-k6-env: &k6-env
 
 x-k6: &k6
   image: grafana/k6
+  logging: *logging
   volumes:
     - ./outputs:/data/output
     - ./tests:/data/tests
