@@ -1,0 +1,15 @@
+---
+services:
+  k6:
+    image: grafana/k6
+    command:
+      --out experimental-prometheus-rw
+      --out "json=/data/output/output.json"
+      /data/tests/login.js
+    volumes:
+      - ./outputs:/data/output
+      - ./tests:/data/tests
+    environment:
+      K6_PROMETHEUS_RW_SERVER_URL: ${HOSTNAME_METRICS}/api/v1/write
+      K6_PROMETHEUS_RW_TREND_AS_NATIVE_HISTOGRAM: true
+      K6_PROMETHEUS_RW_PUSH_INTERVAL: 1s

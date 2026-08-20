@@ -1,0 +1,14 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Generated benchmark fixtures (users.json holds plaintext passwords)
+authentik/blueprints/test-data.yaml
+runner/tests/users.json

@@ -1,0 +1,20 @@
+[project]
+name = "benchmarks"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Jens Langhammer", email = "jens.langhammer@beryju.org" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "faker>=40.36.0",
+    "pyyaml>=6.0.3",
+]
+
+[project.scripts]
+benchmarks = "benchmarks:main"
+
+[build-system]
+requires = ["uv_build>=0.12.5,<0.13.0"]
+build-backend = "uv_build"
