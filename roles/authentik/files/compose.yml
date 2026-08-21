@@ -15,7 +15,19 @@ services:
     logging: *logging
     image: docker.io/library/postgres:16-alpine
     restart: unless-stopped
-    command: "-c max_connections=500"
+    command:
+      - -c
+      - max_connections=500
+      # Slow query and lock-wait logging. Lines go to stdout, so they land in
+      # Loki with the rest of the stack's logs.
+      - -c
+      - log_min_duration_statement=${PG_LOG_MIN_DURATION:-500ms}
+      - -c
+      - log_lock_waits=on
+      - -c
+      - log_temp_files=0
+      - -c
+      - "log_line_prefix=%m [%p] %q%u@%d/%a "
     env_file:
       - .env
     environment:

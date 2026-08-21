@@ -92,6 +92,11 @@ which would otherwise grow without bound. Follow it with
   cached in `credentials/` on the control node so re-runs do not rotate them.
 - Prometheus, Loki, Pyroscope and Grafana bind to `0.0.0.0` because the other
   hosts connect to them. Override `metrics_bind_address` or firewall the host.
+- PostgreSQL logs statements slower than `authentik_pg_log_min_duration` (500ms),
+  plus lock waits and temp-file spills. Those lines go to stdout, so they end up in
+  Loki: `{container="authentik-postgresql-1"} |= "duration:"`. Lowering the
+  threshold towards 0 logs everything, which on a saturated benchmark host changes
+  what you are measuring.
 - Container logs from the authentik and k6 hosts go to Loki through Docker's
   `loki` logging plugin, which `roles/loki_driver` installs on those hosts. Logs
   carry `stack`, `container` and `host` labels, so a run is queryable as
