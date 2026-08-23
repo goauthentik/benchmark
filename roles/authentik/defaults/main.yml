@@ -7,7 +7,7 @@ authentik_dir: "{{ benchmark_root }}/authentik"
 authentik_target: "{{ inventory_hostname }}"
 authentik_image: ghcr.io/goauthentik/server
 authentik_tag: 2026.8.0
-authentik_error_reporting: true
+authentik_error_reporting: false
 # Statements slower than this are logged. 0 would log every statement, which on a
 # benchmark run is enough log volume to change what is being measured.
 authentik_pg_log_min_duration: 500ms
