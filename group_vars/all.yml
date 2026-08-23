@@ -30,28 +30,6 @@ metrics_scrape_interval: 15s
 node_exporter_port: 9100
 cadvisor_port: 8080
 
-# The tests to run, one entry per test. Only name is required; every other key
-# falls back to the matching runner_* default in roles/runner/defaults/main.yml,
-# so `-e runner_vus=32` still moves the whole list at once.
-#
-#   name             unique, [a-z0-9-]. Becomes the k6 testid label, the compose
-#                    service name and the JSON output file name.
-#   script           file under roles/runner/files/tests.
-#   target           host in the authentik group this test drives.
-#   runner           host in the tests group that generates the load.
-#   profile          quick (bounded, blocks the playbook) or burn (background).
-#   vus              virtual users.
-#   iterations       logins per VU, quick only.
-#   flow             flow slug the test walks.
-#   quick_duration   cap on a quick run that cannot finish its iterations.
-#   burn_duration    cap on a burn run, effectively unlimited by default.
-#
-# Two tests may share a target - they then compete for it, which is the point of
-# a mixed-load run - but each name must be unique, because that is what the
-# dashboards split on.
-benchmark_tests:
-  - name: login
-
 # Locally generated fixtures: the blueprint goes to every authentik host, the
 # matching credentials go to every k6 host.
 fixtures_dir: "{{ playbook_dir }}/build"
