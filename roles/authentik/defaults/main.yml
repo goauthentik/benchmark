@@ -33,3 +33,5 @@ authentik_pyroscope_host: "http://{{ metrics_address }}:{{ metrics_pyroscope_por
 # Default values from https://docs.goauthentik.io/install-config/configuration/#authentik_web__workers
 authentik_web_workers: 2
 authentik_web_threads: 4
+
+authentik_extra: ""
