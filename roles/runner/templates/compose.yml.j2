@@ -1,0 +1,70 @@
+---
+# Managed by Ansible - do not edit. One service per test assigned to this host.
+x-logging: &logging
+  # Sent to Loki on the metrics host. Non-blocking so a Loki outage cannot stall
+  # the containers being benchmarked; Docker keeps a local copy for docker logs.
+  driver: loki
+  options:
+    loki-url: "${LOKI_URL:?loki url required}/loki/api/v1/push"
+    loki-external-labels: "stack=runner,container={{ '{{.Name}}' }},host=${LOKI_HOST:-unknown}"
+    loki-retries: "2"
+    mode: non-blocking
+    max-buffer-size: 4m
+
+x-k6-env: &k6-env
+  K6_PROMETHEUS_RW_SERVER_URL: ${HOSTNAME_METRICS}/api/v1/write
+  K6_PROMETHEUS_RW_TREND_AS_NATIVE_HISTOGRAM: true
+  K6_PROMETHEUS_RW_PUSH_INTERVAL: 1s
+  K6_WEB_DASHBOARD: true
+  K6_WEB_DASHBOARD_HOST: 0.0.0.0
+
+x-k6: &k6
+  image: grafana/k6
+  logging: *logging
+  volumes:
+    - ./outputs:/data/output
+    - ./tests:/data/tests
+
+{#
+  Every test is tagged on the command line rather than only inside the script, so
+  k6_vus and the other test-wide metrics carry the test's identity too. testid is
+  what both the k6 dashboard and the summary dashboard split on.
+
+  A host with no tests still gets a valid, empty compose project.
+#}
+services:{{ ' {}' if not runner_host_tests }}
+{% for test in runner_host_tests %}
+  {{ test.service }}:
+    <<: *k6
+    # Named after the test as well, so `docker compose --profile {{ test.name }} up`
+    # brings up this test on its own.
+    profiles: [{{ test.profile }}, {{ test.name }}]
+{% if test.profile == 'burn' %}
+    # Runs until stopped. No JSON output, that file would grow without bound.
+    restart: unless-stopped
+{% endif %}
+    environment:
+      <<: *k6-env
+      BENCH_HOST: {{ test.address }}
+      BENCH_PORT: "{{ test.port }}"
+      VUS: "{{ test.vus }}"
+      ITERATIONS: "{{ test.iterations }}"
+      FLOW: {{ test.flow }}
+      QUICK_DURATION: {{ test.quick_duration }}
+      BURN_DURATION: {{ test.burn_duration }}
+      PROFILE: {{ test.profile }}
+      TEST_ID: {{ test.name }}
+      TARGET: {{ test.target }}
+    ports:
+      - {{ runner_dashboard_port_base + loop.index0 }}:5665
+    command: >
+      run
+      --out experimental-prometheus-rw
+{% if test.profile == 'quick' %}
+      --out "json=/data/output/{{ test.name }}.json"
+{% endif %}
+      --tag testid={{ test.name }}
+      --tag target={{ test.target }}
+      --tag profile={{ test.profile }}
+      /data/tests/{{ test.script }}
+{% endfor %}

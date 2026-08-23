@@ -8,6 +8,11 @@ global:
     prometheus: benchmarks
     prometheus_replica: "0"
 
+# Every job carries a host label with the inventory name of the machine it came
+# from, and the authentik jobs additionally carry target, the name of the
+# authentik deployment - the same value a test's target names and the same label
+# k6 tags its metrics with. That is what lets the dashboards line one test up
+# against the deployment it drove.
 scrape_configs:
   - job_name: prometheus
     static_configs:
@@ -20,25 +25,35 @@ scrape_configs:
       - targets: ["loki:3100"]
   - job_name: authentik
     static_configs:
-      - targets:
 {% for host in groups['authentik'] %}
-          - "{{ hostvars[host].ansible_host | default(host) }}:{{ authentik_port_metrics }}"
+      - targets:
+          - "{{ hostvars[host].ansible_host | default(host) }}:{{ hostvars[host].authentik_port_metrics | default(authentik_port_metrics) }}"
+        labels:
+          target: "{{ hostvars[host].authentik_target | default(host) }}"
+          host: "{{ host }}"
 {% endfor %}
   - job_name: postgres
     static_configs:
-      - targets:
 {% for host in groups['authentik'] %}
-          - "{{ hostvars[host].ansible_host | default(host) }}:{{ authentik_port_pg_exporter }}"
+      - targets:
+          - "{{ hostvars[host].ansible_host | default(host) }}:{{ hostvars[host].authentik_port_pg_exporter | default(authentik_port_pg_exporter) }}"
+        labels:
+          target: "{{ hostvars[host].authentik_target | default(host) }}"
+          host: "{{ host }}"
 {% endfor %}
   - job_name: node
     static_configs:
+{% for address, host in metrics_machines | dictsort %}
       - targets:
-{% for host in (groups['metrics'] + groups['authentik'] + groups['tests']) | unique %}
-          - "{{ hostvars[host].ansible_host | default(host) }}:{{ node_exporter_port }}"
+          - "{{ address }}:{{ hostvars[host].node_exporter_port | default(node_exporter_port) }}"
+        labels:
+          host: "{{ host }}"
 {% endfor %}
   - job_name: cadvisor
     static_configs:
+{% for address, host in metrics_machines | dictsort %}
       - targets:
-{% for host in (groups['metrics'] + groups['authentik'] + groups['tests']) | unique %}
-          - "{{ hostvars[host].ansible_host | default(host) }}:{{ cadvisor_port }}"
+          - "{{ address }}:{{ hostvars[host].cadvisor_port | default(cadvisor_port) }}"
+        labels:
+          host: "{{ host }}"
 {% endfor %}

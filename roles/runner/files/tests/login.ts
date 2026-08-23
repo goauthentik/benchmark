@@ -15,6 +15,13 @@ const vus = Number(__ENV.VUS || 8);
 const usersFile = __ENV.USERS_FILE || "./users.json";
 const flow = __ENV.FLOW || "default-authentication-flow";
 
+// Identity of this test. testid is what the dashboards split on, target names
+// the authentik host being driven, so several tests can share a Prometheus
+// without their series merging. The runner also passes both as global --tag
+// arguments, which covers the metrics k6 emits outside a scenario.
+const testid = __ENV.TEST_ID || "login";
+const target = __ENV.TARGET || host;
+
 const profile = __ENV.PROFILE || "quick";
 // Fixed work per VU rather than a fixed run length, so runs stay comparable.
 const iterations = Number(__ENV.ITERATIONS || 1000);
@@ -54,11 +61,13 @@ if (users.length === 0) {
 }
 
 export const options: Options = {
+    // Named after the test, so the scenario label identifies it as well.
     scenarios: {
-        login: {
+        [testid]: {
             ...scenario,
             tags: {
-                testid: "login",
+                testid: testid,
+                target: target,
                 profile: profile,
             },
         },

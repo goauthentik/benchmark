@@ -1,0 +1,97 @@
+---
+# Turns benchmark_tests into runner_tests: one dict per test with every key
+# filled in, so the compose template and the task loops do not each have to know
+# the fallbacks. Included by this role and, for a fail-fast check, by site.yml
+# before anything is provisioned.
+
+- name: Check that every test is named
+  ansible.builtin.assert:
+    that: benchmark_tests | rejectattr('name', 'defined') | length == 0
+    fail_msg: "Every entry in benchmark_tests needs a name."
+
+- name: Reset the resolved test list
+  ansible.builtin.set_fact:
+    runner_tests: []
+
+- name: Resolve the test definitions
+  ansible.builtin.set_fact:
+    runner_tests: "{{ runner_tests + [runner_test_merged | combine(runner_test_derived)] }}"
+  loop: "{{ benchmark_tests }}"
+  loop_control:
+    label: "{{ item.name | default('<unnamed>') }}"
+  vars:
+    runner_test_defaults:
+      script: "{{ runner_script }}"
+      target: "{{ runner_target }}"
+      runner: "{{ runner_runner }}"
+      profile: "{{ runner_profile }}"
+      vus: "{{ runner_vus }}"
+      iterations: "{{ runner_iterations }}"
+      flow: "{{ runner_flow }}"
+      quick_duration: "{{ runner_quick_duration }}"
+      burn_duration: "{{ runner_burn_duration }}"
+    runner_test_merged: "{{ runner_test_defaults | combine(item) }}"
+    # The target's own vars decide where it is reached, so one authentik host per
+    # machine on the default ports and several on custom ones both work.
+    runner_test_derived:
+      service: "k6-{{ runner_test_merged.name }}"
+      address: >-
+        {{ hostvars[runner_test_merged.target].ansible_host
+           | default(runner_test_merged.target) }}
+      port: >-
+        {{ hostvars[runner_test_merged.target].authentik_port_http
+           | default(authentik_port_http) }}
+
+- name: Check that test names are usable as labels
+  ansible.builtin.assert:
+    that: runner_tests | map(attribute='name') | reject('match', '^[a-z0-9][a-z0-9-]*$') | list | length == 0
+    fail_msg: >-
+      Test names become label values, compose service names and file names, so
+      they must match ^[a-z0-9][a-z0-9-]*$. Got
+      {{ runner_tests | map(attribute='name') | join(', ') }}.
+
+- name: Check that test names are unique
+  ansible.builtin.assert:
+    that: runner_tests | map(attribute='name') | unique | length == runner_tests | length
+    fail_msg: >-
+      Test names are what the dashboards split on, so they have to be unique. Got
+      {{ runner_tests | map(attribute='name') | join(', ') }}.
+
+- name: Check the requested profiles
+  ansible.builtin.assert:
+    that: runner_tests | rejectattr('profile', 'in', ['quick', 'burn']) | list | length == 0
+    fail_msg: >-
+      profile must be quick or burn:
+      {{ runner_tests | rejectattr('profile', 'in', ['quick', 'burn'])
+         | map(attribute='name') | join(', ') }}.
+
+- name: Check that every test targets an authentik host
+  ansible.builtin.assert:
+    that: runner_tests | rejectattr('target', 'in', groups['authentik']) | list | length == 0
+    fail_msg: >-
+      target must name a host in the authentik group
+      ({{ groups['authentik'] | join(', ') }}):
+      {{ runner_tests | rejectattr('target', 'in', groups['authentik'])
+         | map(attribute='name') | join(', ') }}.
+
+- name: Check that every test runs from a test host
+  ansible.builtin.assert:
+    that: runner_tests | rejectattr('runner', 'in', groups['tests']) | list | length == 0
+    fail_msg: >-
+      runner must name a host in the tests group
+      ({{ groups['tests'] | join(', ') }}):
+      {{ runner_tests | rejectattr('runner', 'in', groups['tests'])
+         | map(attribute='name') | join(', ') }}.
+
+- name: Check that every test script exists
+  ansible.builtin.assert:
+    that: runner_tests | map(attribute='script') | reject('in', runner_available_scripts) | list | length == 0
+    fail_msg: >-
+      script must name a file in roles/runner/files/tests
+      ({{ runner_available_scripts | join(', ') }}):
+      {{ runner_tests | rejectattr('script', 'in', runner_available_scripts)
+         | map(attribute='name') | join(', ') }}.
+  vars:
+    runner_available_scripts: >-
+      {{ lookup('ansible.builtin.fileglob', role_path ~ '/files/tests/*.ts', wantlist=true)
+         | map('basename') | list }}

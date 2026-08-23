@@ -1,0 +1,32 @@
+---
+# One bounded run, in the foreground, so the playbook reports what it measured.
+- name: Run and annotate {{ test.name }}
+  block:
+    - name: Record the start of {{ test.name }}
+      ansible.builtin.set_fact:
+        runner_quick_started_ms: "{{ (now(utc=true).timestamp() * 1000) | int }}"
+
+    - name: Run the benchmark for {{ test.name }}
+      ansible.builtin.command:
+        cmd: docker compose run --rm {{ test.service }}
+        chdir: "{{ runner_dir }}"
+      register: runner_quick_run
+      changed_when: true
+  always:
+    # In always so the region is written even when k6 exits non-zero on a failed
+    # threshold - that is exactly the run somebody will want to look at.
+    - name: Show the k6 summary for {{ test.name }}
+      ansible.builtin.debug:
+        var: runner_quick_run.stdout_lines
+      when: runner_quick_run.stdout_lines is defined
+
+    - name: Annotate the run of {{ test.name }}
+      ansible.builtin.include_tasks: annotate.yml
+      vars:
+        annotation_time: "{{ runner_quick_started_ms }}"
+        annotation_time_end: "{{ (now(utc=true).timestamp() * 1000) | int }}"
+        annotation_tags: "{{ ['k6', 'quick', 'test:' ~ test.name, 'target:' ~ test.target] }}"
+        annotation_text: >-
+          quick test {{ test.name }} against {{ test.target }}:
+          {{ test.vus }} VUs x {{ test.iterations }} iterations
+      when: runner_quick_started_ms is defined

@@ -1,0 +1,20 @@
+---
+# Posts one annotation to Grafana from this host - the k6 hosts already reach the
+# metrics host for remote-write, and the dashboards show anything tagged k6 as a
+# marker on the time axis, so a run can be found again afterwards.
+- name: Annotate the run in Grafana
+  ansible.builtin.uri:
+    url: "http://{{ metrics_address }}:{{ metrics_grafana_port }}/api/annotations"
+    method: POST
+    body_format: json
+    # Serialised here so the timestamps stay JSON numbers rather than strings.
+    body: "{{ annotation | combine({'time': annotation_time | int, 'timeEnd': annotation_time_end | int}) | to_json }}"
+    status_code: 200
+  vars:
+    annotation:
+      tags: "{{ annotation_tags }}"
+      text: "{{ annotation_text }}"
+  register: runner_annotation
+  until: runner_annotation is success
+  retries: 5
+  delay: 3

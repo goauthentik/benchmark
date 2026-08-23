@@ -24,6 +24,23 @@
         chdir: "{{ playbook_dir }}"
         creates: "{{ credentials_file }}"
 
+    # Here rather than only in the runner role, so a typo in benchmark_tests
+    # fails before anything is provisioned.
+    - name: Check the test definitions
+      ansible.builtin.include_role:
+        name: runner
+        tasks_from: resolve
+
+    - name: Show what will run
+      ansible.builtin.debug:
+        msg: >-
+          {{ item.name }}: {{ item.profile }}, {{ item.vus }} VUs from
+          {{ item.runner }} against {{ item.target }}
+          ({{ item.address }}:{{ item.port }}), {{ item.script }}
+      loop: "{{ runner_tests }}"
+      loop_control:
+        label: "{{ item.name }}"
+
 - name: Provision all benchmark hosts
   hosts: metrics:authentik:tests
   become: true
@@ -61,7 +78,11 @@
       time: "{{ annotation_start | int }}"
       timeEnd: "{{ (now(utc=true).timestamp() * 1000) | int }}"
       tags: [ansible, deploy]
-      text: "Ansible run on {{ ansible_play_hosts_all | join(', ') }} at {{ annotation_revision }}"
+      text: >-
+        Ansible run at {{ annotation_revision }} on
+        {{ (groups['authentik'] + groups['tests']) | join(', ') }}, tests:
+        {{ hostvars['localhost']['runner_tests'] | default([])
+           | map(attribute='name') | join(', ') | default('none', true) }}
   tasks:
     - name: Create the deploy annotation
       ansible.builtin.uri:

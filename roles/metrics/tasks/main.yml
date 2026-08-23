@@ -52,6 +52,17 @@
     mode: "0644"
   notify: Reload Grafana
 
+# node-exporter and cAdvisor describe a machine, and two inventory hosts can be
+# two authentik stacks on one machine, so they are scraped once per address. The
+# first inventory name wins: what has been collected so far is combined on top,
+# so an address that was already seen keeps the name it got.
+- name: Map each machine to one inventory name
+  ansible.builtin.set_fact:
+    metrics_machines: "{{ {machine_address: item} | combine(metrics_machines | default({})) }}"
+  loop: "{{ (groups['metrics'] + groups['authentik'] + groups['tests']) | unique }}"
+  vars:
+    machine_address: "{{ hostvars[item].ansible_host | default(item) }}"
+
 - name: Write Prometheus configuration
   ansible.builtin.template:
     src: prometheus.yml.j2

@@ -2,14 +2,16 @@
 # Every stack is deployed under this directory on its target host.
 benchmark_root: /opt/benchmarks
 
-# Addresses the hosts use to reach each other. ansible_host is what this control
-# node uses for SSH, which is also what the benchmark traffic should target.
-authentik_address: "{{ hostvars[groups['authentik'] | first].ansible_host | default(groups['authentik'] | first) }}"
+# Address the metrics host is reached on. ansible_host is what this control node
+# uses for SSH, which is also the address the other hosts should use. The
+# authentik hosts are not listed here: every test resolves the address of the
+# host it targets itself, so several of them can be benchmarked at once.
 metrics_address: "{{ hostvars[groups['metrics'] | first].ansible_host | default(groups['metrics'] | first) }}"
 
 # Published ports. These are shared because roles on one host connect to another:
 # Prometheus scrapes authentik, k6 remote-writes to Prometheus, authentik profiles
-# into Pyroscope.
+# into Pyroscope. Set them per host in the inventory to run several authentik
+# stacks on one machine.
 authentik_port_http: 9000
 authentik_port_https: 9443
 authentik_port_metrics: 9300
@@ -24,8 +26,30 @@ metrics_scrape_interval: 15s
 node_exporter_port: 9100
 cadvisor_port: 8080
 
-# Locally generated fixtures: the blueprint goes to the authentik host, the
-# matching credentials go to the k6 host.
+# The tests to run, one entry per test. Only name is required; every other key
+# falls back to the matching runner_* default in roles/runner/defaults/main.yml,
+# so `-e runner_vus=32` still moves the whole list at once.
+#
+#   name             unique, [a-z0-9-]. Becomes the k6 testid label, the compose
+#                    service name and the JSON output file name.
+#   script           file under roles/runner/files/tests.
+#   target           host in the authentik group this test drives.
+#   runner           host in the tests group that generates the load.
+#   profile          quick (bounded, blocks the playbook) or burn (background).
+#   vus              virtual users.
+#   iterations       logins per VU, quick only.
+#   flow             flow slug the test walks.
+#   quick_duration   cap on a quick run that cannot finish its iterations.
+#   burn_duration    cap on a burn run, effectively unlimited by default.
+#
+# Two tests may share a target - they then compete for it, which is the point of
+# a mixed-load run - but each name must be unique, because that is what the
+# dashboards split on.
+benchmark_tests:
+  - name: login
+
+# Locally generated fixtures: the blueprint goes to every authentik host, the
+# matching credentials go to every k6 host.
 fixtures_dir: "{{ playbook_dir }}/build"
 blueprint_file: "{{ fixtures_dir }}/test-data.yaml"
 credentials_file: "{{ fixtures_dir }}/users.json"

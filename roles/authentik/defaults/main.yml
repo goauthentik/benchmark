@@ -1,5 +1,10 @@
 ---
 authentik_dir: "{{ benchmark_root }}/authentik"
+# Name this deployment is known by everywhere else: the target label Prometheus
+# attaches to its metrics, the target a test names, and the container hostname
+# its Pyroscope profiles are tagged with. One inventory host per authentik stack,
+# so two stacks on one machine are two hosts with different ports and dirs.
+authentik_target: "{{ inventory_hostname }}"
 authentik_image: ghcr.io/goauthentik/server
 authentik_tag: 2026.8.0
 authentik_error_reporting: true

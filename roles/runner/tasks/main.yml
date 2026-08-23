@@ -1,8 +1,25 @@
 ---
-- name: Check the requested profile
-  ansible.builtin.assert:
-    that: runner_profile in ["quick", "burn"]
-    fail_msg: "runner_profile must be quick or burn, got {{ runner_profile }}."
+# Included here rather than declared as a role dependency, so site.yml can pull
+# in resolve.yml on the control node to check benchmark_tests without dragging
+# the Docker plugin install along with it.
+- name: Install the Loki Docker logging plugin
+  ansible.builtin.include_role:
+    name: loki_driver
+
+- name: Resolve and check the test definitions
+  ansible.builtin.include_tasks: resolve.yml
+
+- name: Select the tests this host runs
+  ansible.builtin.set_fact:
+    runner_host_tests: "{{ runner_tests | selectattr('runner', 'equalto', inventory_hostname) | list }}"
+
+- name: Select the tests that should be looping in the background
+  ansible.builtin.set_fact:
+    runner_burn_services: >-
+      {{ runner_host_tests
+         | selectattr('profile', 'equalto', 'burn')
+         | map(attribute='service') | list
+         if runner_burn_state == 'present' else [] }}
 
 - name: Create runner directories
   ansible.builtin.file:
@@ -20,9 +37,9 @@
     # The k6 image runs as an unprivileged user and writes its JSON output here.
     mode: "0777"
 
-- name: Copy compose file
-  ansible.builtin.copy:
-    src: compose.yml
+- name: Write compose file
+  ansible.builtin.template:
+    src: compose.yml.j2
     dest: "{{ runner_dir }}/compose.yml"
     mode: "0644"
 
@@ -45,31 +62,66 @@
     dest: "{{ runner_dir }}/.env"
     mode: "0644"
 
+# Containers created by `up` are named <project>-<service>-1, so they can be
+# addressed without enabling their compose profile. Anything left over from a
+# test that was renamed, switched to quick or stopped would otherwise keep
+# loading its target with nobody watching. Quick runs use `run --rm`, whose
+# container names do not collide with these.
+- name: Stop background containers that should no longer be running
+  ansible.builtin.command:
+    cmd: docker rm --force {{ item }}
+  register: runner_removed
+  # docker prints the name it removed and nothing when there was nothing to do.
+  changed_when: item in runner_removed.stdout
+  failed_when:
+    - runner_removed.rc != 0
+    - "'No such container' not in runner_removed.stderr"
+  loop: "{{ runner_stale_containers }}"
+  vars:
+    runner_stale_containers: >-
+      {{ (runner_host_tests | rejectattr('service', 'in', runner_burn_services)
+          | map(attribute='service')
+          | map('regex_replace', '^', runner_dir | basename ~ '-')
+          | map('regex_replace', '$', '-1') | list)
+         + [runner_legacy_burn_container] }}
+
+# Both profiles, so a quick test does not spend its first seconds pulling.
 - name: Pull k6 image
   community.docker.docker_compose_v2_pull:
     project_src: "{{ runner_dir }}"
+    profiles: [quick, burn]
+  when: runner_host_tests | length > 0
 
-- name: Run the quick benchmark
-  ansible.builtin.command:
-    cmd: docker compose run --rm k6
-    chdir: "{{ runner_dir }}"
-  register: runner_k6_run
-  changed_when: true
-  when:
-    - runner_profile == "quick"
-    - runner_run_tests | bool
-
-- name: Show k6 summary
-  ansible.builtin.debug:
-    var: runner_k6_run.stdout_lines
-  when:
-    - runner_profile == "quick"
-    - runner_run_tests | bool
-
-- name: Manage the burn test
+- name: Start the burn tests
   community.docker.docker_compose_v2:
     project_src: "{{ runner_dir }}"
     profiles: [burn]
-    services: [k6-burn]
-    state: "{{ runner_burn_state }}"
-  when: runner_profile == "burn"
+    services: "{{ runner_burn_services }}"
+    state: present
+    remove_orphans: true
+  register: runner_burn
+  when: runner_burn_services | length > 0
+
+# A handler would run at the end of the play, and this annotation is about the
+# moment the load started.
+- name: Annotate the burn tests that were just started # noqa: no-handler
+  ansible.builtin.include_tasks: annotate.yml
+  vars:
+    annotation_time: "{{ (now(utc=true).timestamp() * 1000) | int }}"
+    annotation_time_end: "{{ (now(utc=true).timestamp() * 1000) | int }}"
+    annotation_tags: "{{ ['k6', 'burn', 'test:' ~ item.name, 'target:' ~ item.target] }}"
+    annotation_text: >-
+      burn test {{ item.name }} started against {{ item.target }}
+      with {{ item.vus }} VUs
+  loop: "{{ runner_host_tests | selectattr('service', 'in', runner_burn_services) | list }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: runner_burn.changed | default(false)
+
+- name: Run the quick tests
+  ansible.builtin.include_tasks: quick.yml
+  loop: "{{ runner_host_tests | selectattr('profile', 'equalto', 'quick') | list }}"
+  loop_control:
+    loop_var: test
+    label: "{{ test.name }}"
+  when: runner_run_tests | bool
