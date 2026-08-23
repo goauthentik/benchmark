@@ -4,3 +4,9 @@ metrics_dir: "{{ benchmark_root }}/metrics"
 # from the authentik host, so this binds publicly by default - restrict it with a
 # firewall or set a specific address.
 metrics_bind_address: 0.0.0.0
+
+# Traces are the bulkiest thing this stack stores, and it stores them on a
+# benchmark host's local disk, so they are dropped sooner than Tempo's 14-day
+# default. Written for Tempo 3.x, which moved retention under the backend
+# scheduler and its workers.
+metrics_tempo_retention: 24h

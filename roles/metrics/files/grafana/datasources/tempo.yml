@@ -1,0 +1,25 @@
+---
+apiVersion: 1
+datasources:
+  - name: Tempo
+    type: tempo
+    access: proxy
+    orgId: 1
+    uid: tempo
+    url: http://tempo:3200
+    jsonData:
+      # Service graphs and span metrics need Tempo's metrics-generator, which is
+      # off here - it would compete for CPU with what is being measured.
+      serviceMap: {}
+      nodeGraph:
+        enabled: false
+      # A span has no log labels to join on, so this jumps to the stack's logs
+      # for the span's own time range and leaves the filtering to the query.
+      tracesToLogsV2:
+        datasourceUid: loki
+        spanStartTimeShift: -2s
+        spanEndTimeShift: 2s
+        filterByTraceID: false
+        filterBySpanID: false
+        customQuery: true
+        query: '{stack="authentik"}'

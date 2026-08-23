@@ -23,6 +23,9 @@ scrape_configs:
   - job_name: loki
     static_configs:
       - targets: ["loki:3100"]
+  - job_name: tempo
+    static_configs:
+      - targets: ["tempo:3200"]
   - job_name: authentik
     static_configs:
 {% for host in groups['authentik'] %}

@@ -15,7 +15,7 @@ told apart in Grafana.
 | `site.yml` | Generates fixtures, checks the test list, provisions all hosts, deploys each stack |
 | `roles/common` | Docker, htop and nano on every host |
 | `roles/host_metrics` | node-exporter and cAdvisor on every host |
-| `roles/metrics` | Prometheus, Loki, Pyroscope and Grafana |
+| `roles/metrics` | Prometheus, Loki, Tempo, Pyroscope and Grafana |
 | `roles/authentik` | authentik server, worker, PostgreSQL and its Prometheus exporter |
 | `roles/runner` | k6, the test scripts and one container per test |
 | `gen-blueprint.py` | Generates the test-data blueprint and matching credentials |
@@ -39,7 +39,7 @@ That will:
 2. Resolve `benchmark_tests` and fail before touching anything if a test names a
    host, script or profile that does not exist. The run prints the resolved list.
 3. Install Docker, htop and nano on all hosts.
-4. Deploy Prometheus + Loki + Pyroscope + Grafana on the `metrics` host,
+4. Deploy Prometheus + Loki + Tempo + Pyroscope + Grafana on the `metrics` host,
    authentik on every `authentik` host, and k6 on every `tests` host.
 
 ## Tests
@@ -103,6 +103,58 @@ To run two stacks on one machine, give them one inventory host each with the sam
 `ansible_host` and different ports and `authentik_dir`. node-exporter and
 cAdvisor are then scraped once for that machine, under the first of the two
 names.
+
+## Traces
+
+Tempo runs in the metrics stack and takes OTLP over HTTP on
+`metrics_tempo_otlp_port` (4318). Its own API is not published - Grafana queries
+it and Prometheus scrapes it over the stack's compose network.
+
+k6 always propagates trace context: every login flow gets one W3C trace, one
+`traceparent` per request, and the headers `X-Benchmark-Test` and
+`X-Benchmark-Target`. authentik's sampler is parent-based, so the sampled flag k6
+sets is the whole decision - `runner_trace_sample_rate` (1% by default, settable
+per test as `trace_sample_rate`) is what controls how many login flows are
+traced, not authentik's own `sample_rate`, which only covers spans with no
+incoming context such as background tasks.
+
+authentik's side is off by default, because the tracing it needs is
+[goauthentik/authentik#25412](https://github.com/goauthentik/authentik/pull/25412)
+and the image this repo pins does not have it. On an image built from that branch:
+
+```bash
+uv run ansible-playbook site.yml \
+  -e authentik_error_reporting=true \
+  -e authentik_image=ghcr.io/goauthentik/dev-server \
+  -e authentik_tag=gh-wip-root-otel-v1
+```
+
+`authentik_error_reporting` is the branch's own switch (`error_reporting.enabled`)
+for exporting spans. **On a released image that same flag means "send errors to
+authentik's Sentry" instead**, which is why it defaults to off. With it on, the
+role sets the OTLP endpoint, the sample rate, `deployment.environment` to the
+target's name, and asks the Django instrumentation to record the two benchmark
+headers as span attributes.
+
+The dashboard's collapsed *Traces (Tempo)* row then works off the same selectors
+as everything else:
+
+| Question | TraceQL |
+| --- | --- |
+| Flows one test caused | `{ span.http.request.header.x_benchmark_test = "login-baseline" }` |
+| Everything on one deployment | `{ resource.deployment.environment = "authentik-1" }` |
+| Slow outliers | `{ resource.deployment.environment = "authentik-1" && duration > 500ms }` |
+
+k6 also logs `traceID=<id>` for each flow it samples, and those lines reach Loki,
+where the datasource turns them into a link to the trace - look for
+`{stack="runner"} |= "sampled login"`.
+
+Keep the sample rate low. The branch exports spans with a `SimpleSpanProcessor`,
+so every sampled request pays for an inline OTLP export - at 100% on a burn test
+you are benchmarking the exporter. Traces also take about 30 seconds to become
+searchable (Tempo's `query_end_cutoff`), while a lookup by trace id is immediate,
+and Tempo drops blocks older than `metrics_tempo_retention` (24h) because this is
+local disk on a host that is busy doing something else.
 
 ## Profiles
 
@@ -182,8 +234,9 @@ would otherwise grow without bound. Follow them with `docker compose logs -f` in
 - The authentik database password and secret key are generated on first run and
   cached in `credentials/` on the control node so re-runs do not rotate them. All
   authentik hosts share them.
-- Prometheus, Loki, Pyroscope and Grafana bind to `0.0.0.0` because the other
-  hosts connect to them. Override `metrics_bind_address` or firewall the host.
+- Prometheus, Loki, Tempo, Pyroscope and Grafana bind to `0.0.0.0` because the
+  other hosts connect to them. Override `metrics_bind_address` or firewall the
+  host.
 - PostgreSQL logs statements slower than `authentik_pg_log_min_duration` (500ms),
   plus lock waits and temp-file spills. Those lines go to stdout, so they end up in
   Loki: `{container="authentik-postgresql-1"} |= "duration:"`. Lowering the
@@ -196,7 +249,7 @@ would otherwise grow without bound. Follow them with `docker compose logs -f` in
   Shipping is non-blocking, so a Loki outage drops log lines rather than stalling
   the containers under test, and Docker's dual-logging cache keeps
   `docker compose logs` working locally.
-- Prometheus scrape jobs: `prometheus`, `loki` and `pyroscope` locally;
+- Prometheus scrape jobs: `prometheus`, `loki`, `tempo` and `pyroscope` locally;
   `authentik` on `authentik_port_metrics` and `postgres` on
   `authentik_port_pg_exporter` off every authentik host, both labelled with
   `target` and `host`; and `node` on `node_exporter_port` plus `cadvisor` on
@@ -211,6 +264,10 @@ would otherwise grow without bound. Follow them with `docker compose logs -f` in
 - authentik sends profiles to Pyroscope via `AUTHENTIK_PYROSCOPE_HOST`. Its Python
   components pick this up on their own; the Go components (server, outposts) only
   profile when `AUTHENTIK_DEBUG=true` is also set, which skews benchmark results.
+- Grafana's Tempo datasource links a span to `{stack="authentik"}` in Loki for the
+  span's own time range. Service graphs and span metrics are off: they need
+  Tempo's metrics-generator, which would compete for CPU with what is being
+  measured.
 - The imported `PostgreSQL Monitoring Dashboard` and `Node Exporter Full`
   dashboards predate the `target` label and select by `instance` and `nodename`
   instead; the `k6 Prometheus` dashboard filters by `testid` on its own.

@@ -21,6 +21,12 @@ runner_quick_duration: 150s
 runner_burn_duration: 8760h
 runner_vus: 8
 
+# Share of login flows k6 marks as sampled in the traceparent header it sends.
+# authentik's sampler is parent-based, so this - not authentik's own sample rate -
+# decides how many of the benchmark's requests end up in Tempo. Sending the header
+# costs nothing when authentik is not instrumented, so it is on by default.
+runner_trace_sample_rate: 0.01
+
 # k6's web dashboard, one port per test on the host so concurrent burn tests do
 # not collide. Tests are numbered in the order they appear in benchmark_tests.
 runner_dashboard_port_base: 5665

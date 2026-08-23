@@ -1,0 +1,35 @@
+---
+# Managed by Ansible - do not edit.
+server:
+  http_listen_port: 3200
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        # OTLP over HTTP only: authentik's exporter is the proto-http one, and k6
+        # sends no spans of its own - it only propagates trace context.
+        http:
+          endpoint: 0.0.0.0:4318
+
+storage:
+  trace:
+    backend: local
+    local:
+      path: /var/tempo/blocks
+    wal:
+      path: /var/tempo/wal
+
+# The scheduler decides what to drop and the workers carry it out, so both need
+# the retention.
+backend_scheduler:
+  provider:
+    compaction:
+      compaction:
+        block_retention: {{ metrics_tempo_retention }}
+backend_worker:
+  compaction:
+    block_retention: {{ metrics_tempo_retention }}
+
+usage_report:
+  reporting_enabled: false

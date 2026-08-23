@@ -30,6 +30,7 @@
       flow: "{{ runner_flow }}"
       quick_duration: "{{ runner_quick_duration }}"
       burn_duration: "{{ runner_burn_duration }}"
+      trace_sample_rate: "{{ runner_trace_sample_rate }}"
     runner_test_merged: "{{ runner_test_defaults | combine(item) }}"
     # The target's own vars decide where it is reached, so one authentik host per
     # machine on the default ports and several on custom ones both work.

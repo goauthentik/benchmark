@@ -55,6 +55,7 @@ services:{{ ' {}' if not runner_host_tests }}
       PROFILE: {{ test.profile }}
       TEST_ID: {{ test.name }}
       TARGET: {{ test.target }}
+      TRACE_SAMPLE_RATE: "{{ test.trace_sample_rate }}"
     ports:
       - {{ runner_dashboard_port_base + loop.index0 }}:5665
     command: >

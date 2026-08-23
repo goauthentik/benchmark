@@ -7,7 +7,24 @@ authentik_dir: "{{ benchmark_root }}/authentik"
 authentik_target: "{{ inventory_hostname }}"
 authentik_image: ghcr.io/goauthentik/server
 authentik_tag: 2026.8.0
+# Master switch for authentik's error_reporting section. On the OpenTelemetry
+# branch (goauthentik/authentik#25412) this is what makes authentik export spans
+# over OTLP to Tempo; on a released image the same flag means "send errors to
+# authentik's Sentry", which is why it is off by default. Enabling it only does
+# something useful with an image built from that branch.
 authentik_error_reporting: false
+# Base OTLP endpoint of the metrics stack's Tempo. authentik appends /v1/traces,
+# matching the standard OTEL_EXPORTER_OTLP_ENDPOINT convention.
+authentik_tracing_endpoint: "http://{{ metrics_address }}:{{ metrics_tempo_otlp_port }}"
+# Only applies to spans started without an incoming trace context - background
+# tasks, and any traffic that is not k6's. The sampler is parent-based, so a
+# request carrying a traceparent is sampled exactly as k6 decided it should be
+# (runner_trace_sample_rate).
+authentik_tracing_sample_rate: 0.1
+# Request headers recorded as span attributes, as http.request.header.<name> with
+# dashes turned into underscores. This is what puts the test's name on the spans
+# it caused, so a trace can be tied back to one test.
+authentik_tracing_capture_headers: x-benchmark-test,x-benchmark-target
 # Statements slower than this are logged. 0 would log every statement, which on a
 # benchmark run is enough log volume to change what is being measured.
 authentik_pg_log_min_duration: 500ms

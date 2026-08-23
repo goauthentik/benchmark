@@ -41,6 +41,20 @@ services:
       - pyroscope-compactor:/data-compactor
       - pyroscope-metastore:/data-metastore
 
+  tempo:
+    image: grafana/tempo:latest
+    restart: unless-stopped
+    command: -config.file=/etc/tempo.yaml
+    ports:
+      # The authentik hosts export their spans here. Tempo's own API on 3200 is
+      # not published: Grafana queries it and Prometheus scrapes it over this
+      # compose network.
+      - ${METRICS_BIND_ADDRESS:-0.0.0.0}:${TEMPO_OTLP_PORT:-4318}:4318
+    volumes:
+      - ./tempo.yaml:/etc/tempo.yaml:ro
+      # Named volume because the image runs as an unprivileged user.
+      - tempo-data:/var/tempo
+
   grafana:
     image: grafana/grafana:latest
     restart: unless-stopped
@@ -58,6 +72,8 @@ services:
 
 volumes:
   loki-data:
+    driver: local
+  tempo-data:
     driver: local
   pyroscope-data:
     driver: local

@@ -63,6 +63,13 @@
   vars:
     machine_address: "{{ hostvars[item].ansible_host | default(item) }}"
 
+- name: Write Tempo configuration
+  ansible.builtin.template:
+    src: tempo.yml.j2
+    dest: "{{ metrics_dir }}/tempo.yaml"
+    mode: "0644"
+  notify: Reload Tempo
+
 - name: Write Prometheus configuration
   ansible.builtin.template:
     src: prometheus.yml.j2

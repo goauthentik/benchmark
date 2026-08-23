@@ -20,6 +20,10 @@ metrics_prometheus_port: 9090
 metrics_grafana_port: 3000
 metrics_pyroscope_port: 4040
 metrics_loki_port: 3100
+# Tempo's OTLP HTTP receiver, which the authentik hosts export spans to. Its own
+# API (3200) is only reached by Grafana and Prometheus over the compose network,
+# so it stays unpublished.
+metrics_tempo_otlp_port: 4318
 
 # Shared by Prometheus itself and by Grafana's $__rate_interval calculation.
 metrics_scrape_interval: 15s
