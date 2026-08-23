@@ -73,9 +73,10 @@ the target it drove, and each run also posts a Grafana annotation tagged `k6` an
 `test:<name>`.
 
 The *Test Comparison* dashboard is dedicated to reading several `testid`s against
-each other: throughput, latency percentiles, error and check-pass rates all
-broken out per test, plus a *Side by side* table with the current numbers in one
-row per test.
+each other: an *Overview* row of Logins/s, Requests/s, p50 and p99 cards repeats
+once per test, followed by throughput, latency percentiles, error and check-pass
+rates all broken out per test, plus a *Side by side* table with the current
+numbers in one row per test.
 
 Two tests may share a target - they then compete for it, which is the point of a
 mixed-load run. Names have to be unique, because that is what the dashboards
