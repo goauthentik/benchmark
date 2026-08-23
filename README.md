@@ -155,6 +155,16 @@ k6 also logs `traceID=<id>` for each flow it samples, and those lines reach Loki
 where the datasource turns them into a link to the trace - look for
 `{stack="runner"} |= "sampled login"`.
 
+The datasource's *Service Graph* tab draws the same spans as a map of callers and
+callees, with a RED table beside it. Both come from Prometheus, not Tempo: the
+metrics-generator turns spans into `traces_service_graph_request_total` and
+`traces_spanmetrics_calls_total` and remote-writes them. Every deployment reports
+the same `service.name`, so `deployment.environment` is generated as an extra
+dimension - filter one target's half of the graph with
+`traces_service_graph_request_total{deployment_environment="authentik-1"}`. The
+graph only shows what was sampled, so at `runner_trace_sample_rate` of 1% it is a
+shape, not a rate.
+
 Keep the sample rate low. The branch exports spans with a `SimpleSpanProcessor`,
 so every sampled request pays for an inline OTLP export - at 100% on a burn test
 you are benchmarking the exporter. Traces also take about 30 seconds to become
@@ -271,9 +281,12 @@ would otherwise grow without bound. Follow them with `docker compose logs -f` in
   components pick this up on their own; the Go components (server, outposts) only
   profile when `AUTHENTIK_DEBUG=true` is also set, which skews benchmark results.
 - Grafana's Tempo datasource links a span to `{stack="authentik"}` in Loki for the
-  span's own time range. Service graphs and span metrics are off: they need
-  Tempo's metrics-generator, which would compete for CPU with what is being
-  measured.
+  span's own time range, and points its service map at Prometheus. Tempo's
+  metrics-generator does the work: it remote-writes `traces_service_graph_*` and
+  `traces_spanmetrics_*` into Prometheus rather than being scraped, so it labels
+  them `cluster="benchmarks"` itself and collects on `metrics_scrape_interval`.
+  That costs CPU and memory on the metrics host - drop the `overrides` block from
+  `roles/metrics/templates/tempo.yml.j2` if that host is also under test.
 - The imported `PostgreSQL Monitoring Dashboard` and `Node Exporter Full`
   dashboards predate the `target` label and select by `instance` and `nodename`
   instead; the `k6 Prometheus` dashboard filters by `testid` on its own.

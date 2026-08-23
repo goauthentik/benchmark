@@ -8,11 +8,13 @@ datasources:
     uid: tempo
     url: http://tempo:3200
     jsonData:
-      # Service graphs and span metrics need Tempo's metrics-generator, which is
-      # off here - it would compete for CPU with what is being measured.
-      serviceMap: {}
+      # Tempo's metrics-generator remote-writes the service graph and span
+      # metrics into Prometheus, so the graph is drawn from queries against it.
+      serviceMap:
+        datasourceUid: prometheus
+      # The service map renders as a node graph, so this has to be on for it.
       nodeGraph:
-        enabled: false
+        enabled: true
       # A span has no log labels to join on, so this jumps to the stack's logs
       # for the span's own time range and leaves the filtering to the query.
       tracesToLogsV2:
