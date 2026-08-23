@@ -60,7 +60,7 @@ services:
     restart: unless-stopped
     environment:
       GF_AUTH_ANONYMOUS_ENABLED: "true"
-      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
       # summary.json is a v2 schema dashboard, which needs these before Grafana
       # will provision it. Default-on from Grafana 13, required before that.
       GF_FEATURE_TOGGLES_ENABLE: kubernetesDashboards,dashboardNewLayouts
