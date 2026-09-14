@@ -4,23 +4,39 @@ all:
     ansible_user: root
     fixture_users: 250
     fixture_seed: 1337
-  # Every host also runs node-exporter, scraped by Prometheus on the metrics host.
+    # One entry per test. Each one gets its own k6 container, its own testid
+    # label and its own line in the dashboards, so these two runs can be told
+    # apart while they drive different authentik hosts at the same time.
+    benchmark_tests:
+      - name: login-two-workers
+        target: authentik-1
+        profile: burn
+      - name: login-eight-workers
+        target: authentik-2
+        profile: burn
+  # Every host also runs node-exporter and cAdvisor, scraped by Prometheus on the
+  # metrics host.
   children:
     # Prometheus, Loki, Pyroscope and Grafana. Receives k6 remote-write and the
-    # container logs of the other hosts, scrapes authentik's metrics endpoint and
-    # ingests its profiles.
+    # container logs of the other hosts, scrapes every authentik host's metrics
+    # endpoint and ingests their profiles.
     metrics:
       hosts:
         metrics-1:
           ansible_host: metrics.example.com
-    # authentik server, worker and PostgreSQL, seeded with the generated blueprint.
+    # One authentik stack - server, worker, PostgreSQL and its exporter - per
+    # host, each seeded with the same generated blueprint. Vars set here are what
+    # a test comparing two of them varies.
     authentik:
       hosts:
         authentik-1:
-          ansible_host: authentik.example.com
-      vars:
-        authentik_web_workers: 4
-    # k6 load generator.
+          ansible_host: authentik-1.example.com
+          authentik_web_workers: 2
+        authentik-2:
+          ansible_host: authentik-2.example.com
+          authentik_web_workers: 8
+    # k6 load generators. A test's runner picks which one drives it; without one
+    # the first host in this group runs everything.
     tests:
       hosts:
         tests-1:

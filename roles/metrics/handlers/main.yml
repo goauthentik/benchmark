@@ -13,3 +13,10 @@
     state: restarted
     services:
       - grafana
+
+- name: Reload Tempo
+  community.docker.docker_compose_v2:
+    project_src: "{{ metrics_dir }}"
+    state: restarted
+    services:
+      - tempo

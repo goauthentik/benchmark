@@ -15,6 +15,18 @@ const vus = Number(__ENV.VUS || 8);
 const usersFile = __ENV.USERS_FILE || "./users.json";
 const flow = __ENV.FLOW || "default-authentication-flow";
 
+// Identity of this test. testid is what the dashboards split on, target names
+// the authentik host being driven, so several tests can share a Prometheus
+// without their series merging. The runner also passes both as global --tag
+// arguments, which covers the metrics k6 emits outside a scenario.
+const testid = __ENV.TEST_ID || "login";
+const target = __ENV.TARGET || host;
+
+// Share of login flows that get a sampled traceparent. authentik's sampler is
+// parent-based, so this decides what ends up in Tempo; the header is cheap and
+// simply ignored by an authentik that is not instrumented.
+const traceSampleRate = Number(__ENV.TRACE_SAMPLE_RATE || 0);
+
 const profile = __ENV.PROFILE || "quick";
 // Fixed work per VU rather than a fixed run length, so runs stay comparable.
 const iterations = Number(__ENV.ITERATIONS || 1000);
@@ -54,24 +66,49 @@ if (users.length === 0) {
 }
 
 export const options: Options = {
+    // Named after the test, so the scenario label identifies it as well.
     scenarios: {
-        login: {
+        [testid]: {
             ...scenario,
             tags: {
-                testid: "login",
+                testid: testid,
+                target: target,
                 profile: profile,
             },
         },
     },
 };
 
+function hex(bytes: number): string {
+    let out = "";
+    for (let i = 0; i < bytes; i++) {
+        out += ((Math.random() * 256) | 0).toString(16).padStart(2, "0");
+    }
+    return out;
+}
+
 export default function (): void {
     const url = http.url`http://${host}:${port}/api/v3/flows/executor/${flow}/`;
+    // One trace per login flow, so all of its requests end up in the same trace
+    // in Tempo. k6 emits no spans of its own, so the flags byte is the whole
+    // sampling decision: authentik's parent-based sampler keeps 01 and drops 00.
+    const traceId = hex(16);
+    const sampled = Math.random() < traceSampleRate;
+    if (sampled) {
+        // Picked up as a derived field by Grafana's Loki datasource, which turns it
+        // into a link to the trace.
+        console.log(`sampled login testid=${testid} target=${target} traceID=${traceId}`);
+    }
     const params = {
         jar: new http.CookieJar(),
         headers: {
             "Content-Type": "application/json",
             Accept: "*/*",
+            // Recorded as span attributes by authentik, so its spans say which
+            // test caused them.
+            "X-Benchmark-Test": testid,
+            "X-Benchmark-Target": target,
+            traceparent: `00-${traceId}-${hex(8)}-0${sampled ? 1 : 0}`,
         },
     };
     // Walk the user list so concurrent VUs never authenticate as the same user.
@@ -107,6 +144,7 @@ export default function (): void {
         }
 
         payload.component = component;
+        params.headers.traceparent = `00-${traceId}-${hex(8)}-0${sampled ? 1 : 0}`;
         res = http.post(url, JSON.stringify(payload), params);
         requests++;
     }

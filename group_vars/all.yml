@@ -2,14 +2,16 @@
 # Every stack is deployed under this directory on its target host.
 benchmark_root: /opt/benchmarks
 
-# Addresses the hosts use to reach each other. ansible_host is what this control
-# node uses for SSH, which is also what the benchmark traffic should target.
-authentik_address: "{{ hostvars[groups['authentik'] | first].ansible_host | default(groups['authentik'] | first) }}"
+# Address the metrics host is reached on. ansible_host is what this control node
+# uses for SSH, which is also the address the other hosts should use. The
+# authentik hosts are not listed here: every test resolves the address of the
+# host it targets itself, so several of them can be benchmarked at once.
 metrics_address: "{{ hostvars[groups['metrics'] | first].ansible_host | default(groups['metrics'] | first) }}"
 
 # Published ports. These are shared because roles on one host connect to another:
 # Prometheus scrapes authentik, k6 remote-writes to Prometheus, authentik profiles
-# into Pyroscope.
+# into Pyroscope. Set them per host in the inventory to run several authentik
+# stacks on one machine.
 authentik_port_http: 9000
 authentik_port_https: 9443
 authentik_port_metrics: 9300
@@ -18,14 +20,18 @@ metrics_prometheus_port: 9090
 metrics_grafana_port: 3000
 metrics_pyroscope_port: 4040
 metrics_loki_port: 3100
+# Tempo's OTLP HTTP receiver, which the authentik hosts export spans to. Its own
+# API (3200) is only reached by Grafana and Prometheus over the compose network,
+# so it stays unpublished.
+metrics_tempo_otlp_port: 4318
 
 # Shared by Prometheus itself and by Grafana's $__rate_interval calculation.
 metrics_scrape_interval: 15s
 node_exporter_port: 9100
 cadvisor_port: 8080
 
-# Locally generated fixtures: the blueprint goes to the authentik host, the
-# matching credentials go to the k6 host.
+# Locally generated fixtures: the blueprint goes to every authentik host, the
+# matching credentials go to every k6 host.
 fixtures_dir: "{{ playbook_dir }}/build"
 blueprint_file: "{{ fixtures_dir }}/test-data.yaml"
 credentials_file: "{{ fixtures_dir }}/users.json"

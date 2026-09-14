@@ -132,7 +132,7 @@
                     },
                     "editorMode": "code",
                     "exemplar": true,
-                    "expr": "sum by (flow_slug) (rate(authentik_flows_plan_time_sum{namespace=~\"$namespace\"}[$__rate_interval]))",
+                    "expr": "sum by (flow_slug) (rate(authentik_flows_plan_time_sum{namespace=~\"$namespace\", target=~\"$target\"}[$__rate_interval]))",
                     "interval": "",
                     "legendFormat": "{{ stage_type }}",
                     "range": true,
@@ -235,7 +235,7 @@
                     },
                     "editorMode": "code",
                     "exemplar": true,
-                    "expr": "sum(rate(authentik_tasks_errors_total{namespace=~\"$namespace\"}[$__rate_interval]))",
+                    "expr": "sum(rate(authentik_tasks_errors_total{namespace=~\"$namespace\", target=~\"$target\"}[$__rate_interval]))",
                     "format": "time_series",
                     "instant": true,
                     "interval": "",
@@ -249,7 +249,7 @@
                     },
                     "editorMode": "code",
                     "exemplar": true,
-                    "expr": "sum(authentik_tasks_total{namespace=~\"$namespace\"})",
+                    "expr": "sum(authentik_tasks_total{namespace=~\"$namespace\", target=~\"$target\"})",
                     "hide": false,
                     "instant": true,
                     "interval": "",
@@ -352,7 +352,7 @@
                         "uid": "${DS_PROMETHEUS}"
                     },
                     "exemplar": true,
-                    "expr": "max(authentik_admin_workers{namespace=~\"$namespace\"})",
+                    "expr": "max(authentik_admin_workers{namespace=~\"$namespace\", target=~\"$target\"})",
                     "interval": "",
                     "legendFormat": "",
                     "refId": "A"
@@ -419,7 +419,7 @@
                     },
                     "editorMode": "code",
                     "exemplar": true,
-                    "expr": "sum(authentik_policies_cached{namespace=~\"$namespace\"})",
+                    "expr": "sum(authentik_policies_cached{namespace=~\"$namespace\", target=~\"$target\"})",
                     "instant": true,
                     "interval": "",
                     "legendFormat": "Cached policies",
@@ -496,7 +496,7 @@
                     },
                     "editorMode": "code",
                     "exemplar": true,
-                    "expr": "sum(authentik_outposts_connected{namespace=~\"$namespace\"}) by (outpost)",
+                    "expr": "sum(authentik_outposts_connected{namespace=~\"$namespace\", target=~\"$target\"}) by (outpost)",
                     "interval": "",
                     "legendFormat": "__auto",
                     "range": true,
@@ -598,7 +598,7 @@
                     },
                     "editorMode": "code",
                     "exemplar": true,
-                    "expr": "topk(5, avg by(binding_target_type, mode) (rate(authentik_policies_execution_time_bucket{namespace=~\"$namespace\"}[$__rate_interval])))",
+                    "expr": "topk(5, avg by(binding_target_type, mode) (rate(authentik_policies_execution_time_bucket{namespace=~\"$namespace\", target=~\"$target\"}[$__rate_interval])))",
                     "interval": "",
                     "legendFormat": "{{ binding_target_type }} {{ mode }}",
                     "range": true,
@@ -701,7 +701,7 @@
                     },
                     "editorMode": "code",
                     "exemplar": true,
-                    "expr": "avg by (actor_name) (rate(authentik_tasks_duration_milliseconds_bucket{namespace=~\"$namespace\"}[$__rate_interval]))",
+                    "expr": "avg by (actor_name) (rate(authentik_tasks_duration_milliseconds_bucket{namespace=~\"$namespace\", target=~\"$target\"}[$__rate_interval]))",
                     "instant": false,
                     "interval": "",
                     "legendFormat": "{{ task_name }}",
@@ -804,7 +804,7 @@
                     },
                     "editorMode": "code",
                     "exemplar": true,
-                    "expr": "topk(5, avg by(object_type, mode) (rate(authentik_policies_execution_time_sum{namespace=~\"$namespace\"}[$__rate_interval])))",
+                    "expr": "topk(5, avg by(object_type, mode) (rate(authentik_policies_execution_time_sum{namespace=~\"$namespace\", target=~\"$target\"}[$__rate_interval])))",
                     "interval": "",
                     "legendFormat": "{{ object_type }} {{ mode }}",
                     "range": true,
@@ -906,7 +906,7 @@
                     },
                     "editorMode": "code",
                     "exemplar": true,
-                    "expr": "sum(authentik_tasks_queued{namespace=~\"$namespace\"})",
+                    "expr": "sum(authentik_tasks_queued{namespace=~\"$namespace\", target=~\"$target\"})",
                     "instant": false,
                     "interval": "",
                     "legendFormat": "{{ task_name }}",
@@ -1018,7 +1018,7 @@
                             },
                             "editorMode": "code",
                             "exemplar": true,
-                            "expr": "sum(rate(authentik_outpost_proxy_request_duration_seconds_count{namespace=~\"$namespace\", outpost_name=\"$outpost_proxy\"}[$__rate_interval])) by (host)",
+                            "expr": "sum(rate(authentik_outpost_proxy_request_duration_seconds_count{namespace=~\"$namespace\", target=~\"$target\", outpost_name=\"$outpost_proxy\"}[$__rate_interval])) by (host)",
                             "interval": "",
                             "legendFormat": "{{ host }} {{ path }}",
                             "range": true,
@@ -1119,7 +1119,7 @@
                             },
                             "editorMode": "code",
                             "exemplar": true,
-                            "expr": "sum(rate(authentik_outpost_proxy_upstream_response_duration_seconds_count{namespace=~\"$namespace\", outpost_name=\"$outpost_proxy\"}[$__rate_interval])) by (host)",
+                            "expr": "sum(rate(authentik_outpost_proxy_upstream_response_duration_seconds_count{namespace=~\"$namespace\", target=~\"$target\", outpost_name=\"$outpost_proxy\"}[$__rate_interval])) by (host)",
                             "interval": "",
                             "legendFormat": "{{ host }}",
                             "range": true,
@@ -1234,7 +1234,7 @@
                                 "uid": "${DS_PROMETHEUS}"
                             },
                             "exemplar": true,
-                            "expr": "avg by (dn) (rate(authentik_outpost_ldap_requests_bucket{namespace=~\"$namespace\", outpost_name=\"$outpost_ldap\"}[5m]))",
+                            "expr": "avg by (dn) (rate(authentik_outpost_ldap_requests_bucket{namespace=~\"$namespace\", target=~\"$target\", outpost_name=\"$outpost_ldap\"}[5m]))",
                             "interval": "",
                             "legendFormat": "{{ dn }}",
                             "refId": "A"
@@ -1333,7 +1333,7 @@
                                 "uid": "${DS_PROMETHEUS}"
                             },
                             "exemplar": true,
-                            "expr": "avg by (reason) (rate(authentik_outpost_ldap_requests_rejected{namespace=~\"$namespace\", outpost_name=\"$outpost_ldap\"}[5m]))",
+                            "expr": "avg by (reason) (rate(authentik_outpost_ldap_requests_rejected{namespace=~\"$namespace\", target=~\"$target\", outpost_name=\"$outpost_ldap\"}[5m]))",
                             "interval": "",
                             "legendFormat": "{{ reason }}",
                             "refId": "A"
@@ -1432,7 +1432,7 @@
                                 "uid": "${DS_PROMETHEUS}"
                             },
                             "exemplar": true,
-                            "expr": "avg by (flow) (rate(authentik_outpost_flow_timing_get_bucket{namespace=~\"$namespace\"}[5m]))",
+                            "expr": "avg by (flow) (rate(authentik_outpost_flow_timing_get_bucket{namespace=~\"$namespace\", target=~\"$target\"}[5m]))",
                             "hide": false,
                             "interval": "",
                             "legendFormat": "{{ flow }} GET",
@@ -1444,7 +1444,7 @@
                                 "uid": "${DS_PROMETHEUS}"
                             },
                             "exemplar": true,
-                            "expr": "avg by (flow) (rate(authentik_outpost_flow_timing_post_bucket{namespace=~\"$namespace\"}[5m]))",
+                            "expr": "avg by (flow) (rate(authentik_outpost_flow_timing_post_bucket{namespace=~\"$namespace\", target=~\"$target\"}[5m]))",
                             "hide": false,
                             "interval": "",
                             "legendFormat": "{{ flow }} POST",
@@ -1512,7 +1512,7 @@
                                 "uid": "${DS_PROMETHEUS}"
                             },
                             "exemplar": true,
-                            "expr": "group by (type) (authentik_outpost_ldap_requests_sum)",
+                            "expr": "group by (type) (authentik_outpost_ldap_requests_sum{target=~\"$target\"})",
                             "hide": false,
                             "interval": "",
                             "legendFormat": "{{ type }}",
@@ -1581,7 +1581,7 @@
                                 "uid": "${DS_PROMETHEUS}"
                             },
                             "exemplar": true,
-                            "expr": "group by (reason) (authentik_outpost_ldap_requests_rejected)",
+                            "expr": "group by (reason) (authentik_outpost_ldap_requests_rejected{target=~\"$target\"})",
                             "hide": false,
                             "interval": "",
                             "legendFormat": "{{ reason }}",
@@ -1692,7 +1692,7 @@
                     "targets": [
                         {
                             "editorMode": "code",
-                            "expr": "authentik_outpost_radius_request_duration_seconds_count{namespace=~\"$namespace\", outpost_name=~\"$outpost_radius\"}",
+                            "expr": "authentik_outpost_radius_request_duration_seconds_count{namespace=~\"$namespace\", target=~\"$target\", outpost_name=~\"$outpost_radius\"}",
                             "legendFormat": "{{app}}",
                             "range": true,
                             "refId": "A"
@@ -1792,7 +1792,7 @@
                             },
                             "editorMode": "code",
                             "exemplar": true,
-                            "expr": "avg by (flow) (rate(authentik_outpost_flow_timing_get_seconds_count{namespace=~\"$namespace\"}[$__rate_interval]))",
+                            "expr": "avg by (flow) (rate(authentik_outpost_flow_timing_get_seconds_count{namespace=~\"$namespace\", target=~\"$target\"}[$__rate_interval]))",
                             "hide": false,
                             "interval": "",
                             "legendFormat": "{{ flow }} GET",
@@ -1806,7 +1806,7 @@
                             },
                             "editorMode": "code",
                             "exemplar": true,
-                            "expr": "avg by (flow) (rate(authentik_outpost_flow_timing_post_seconds_bucket{namespace=~\"$namespace\"}[$__rate_interval]))",
+                            "expr": "avg by (flow) (rate(authentik_outpost_flow_timing_post_seconds_bucket{namespace=~\"$namespace\", target=~\"$target\"}[$__rate_interval]))",
                             "hide": false,
                             "interval": "",
                             "legendFormat": "{{ flow }} POST",
@@ -1858,6 +1858,29 @@
                 "refresh": 1,
                 "regex": "/.*namespace=\"([^\"]*).*/",
                 "type": "query"
+            },
+            {
+                "current": {},
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${DS_PROMETHEUS}"
+                },
+                "definition": "label_values(up{job=\"authentik\"}, target)",
+                "includeAll": true,
+                "label": "authentik target",
+                "multi": true,
+                "name": "target",
+                "options": [],
+                "query": {
+                    "qryType": 1,
+                    "query": "label_values(up{job=\"authentik\"}, target)",
+                    "refId": "PrometheusVariableQueryEditor-VariableQuery"
+                },
+                "refresh": 1,
+                "regex": "",
+                "type": "query",
+                "description": "authentik deployment these panels are scoped to. Prometheus labels every authentik job with it, and it is the same name a test picks as its target.",
+                "allValue": ".*"
             },
             {
                 "current": {

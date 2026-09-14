@@ -1,0 +1,65 @@
+---
+# Managed by Ansible - do not edit.
+server:
+  http_listen_port: 3200
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        # OTLP over HTTP only: authentik's exporter is the proto-http one, and k6
+        # sends no spans of its own - it only propagates trace context.
+        http:
+          endpoint: 0.0.0.0:4318
+
+storage:
+  trace:
+    backend: local
+    local:
+      path: /var/tempo/blocks
+    wal:
+      path: /var/tempo/wal
+
+# The scheduler decides what to drop and the workers carry it out, so both need
+# the retention.
+backend_scheduler:
+  provider:
+    compaction:
+      compaction:
+        block_retention: {{ metrics_tempo_retention }}
+backend_worker:
+  compaction:
+    block_retention: {{ metrics_tempo_retention }}
+
+# Feeds Grafana's service graph and Service Graph view. The metrics go straight
+# to Prometheus' remote-write receiver rather than being scraped, so nothing here
+# picks up Prometheus' external_labels - cluster is set to the same value by hand.
+metrics_generator:
+  registry:
+    collection_interval: {{ metrics_scrape_interval }}
+    external_labels:
+      cluster: benchmarks
+  storage:
+    path: /var/tempo/generator/wal
+    remote_write:
+      - url: http://prometheus:9090/api/v1/write
+        send_exemplars: true
+
+overrides:
+  defaults:
+    metrics_generator:
+      processors:
+        # span-metrics is what fills the RED table in the Service Graph view.
+        - service-graphs
+        - span-metrics
+      # Every authentik deployment reports the same service.name, so without this
+      # dimension the generated series cannot be told apart per target. It lands
+      # as the label deployment_environment, and the role sets the attribute to
+      # the target's name.
+      processor:
+        service_graphs:
+          dimensions: [deployment.environment]
+        span_metrics:
+          dimensions: [deployment.environment]
+usage_report:
+  reporting_enabled: false
